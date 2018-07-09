@@ -39,32 +39,32 @@ private:
 	VkPhysicalDevice _physicalDevice;
 	VkDevice _device;
 	
-	VkPipeline graphicsPipeline;
-	VkPipelineLayout pipelineLayout;
-	VkRenderPass mainRenderPass;
+	VkPipeline _graphicsPipeline;
+	VkPipelineLayout _pipelineLayout;
+	VkRenderPass _mainRenderPass;
 	
-	VkQueue graphicsQueue, presentQueue;
+	VkQueue _graphicsQueue, _presentQueue;
 	
-	VkCommandPool commandPool;
-	std::vector<VkCommandBuffer> commandBuffers;
+	VkCommandPool _commandPool;
+	std::vector<VkCommandBuffer> _commandBuffers;
 	
 	VkBuffer _vertexBuffer;
 	VkDeviceMemory _vertexBufferMemory;
 	VkBuffer _indexBuffer;
 	VkDeviceMemory _indexBufferMemory;
 	
-	VkSwapchainKHR swapChain;
-	VulkanUtilities::SwapchainParameters swapchainParams;
+	VkSwapchainKHR _swapchain;
+	VulkanUtilities::SwapchainParameters _swapchainParams;
 	
-	std::vector<VkImage> swapChainImages;
-	std::vector<VkImageView> swapChainImageViews;
-	std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::vector<VkImage> _swapchainImages;
+	std::vector<VkImageView> _swapchainImageViews;
+	std::vector<VkFramebuffer> _swapchainFramebuffers;
 	
-	std::vector<VkSemaphore> imageAvailableSemaphores;
-	std::vector<VkSemaphore> renderFinishedSemaphores;
-	std::vector<VkFence> inFlightFences;
+	std::vector<VkSemaphore> _imageAvailableSemaphores;
+	std::vector<VkSemaphore> _renderFinishedSemaphores;
+	std::vector<VkFence> _inFlightFences;
 	
-	size_t currentFrame = 0;
+	size_t _currentFrame = 0;
 	glm::vec2 _size = glm::vec2(0.0f,0.0f);
 };
 
