@@ -95,7 +95,6 @@ VkResult Renderer::draw(){
 	submitInfo.pSignalSemaphores = signalSemaphores;
 	if(vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 		std::cerr << "Unable to submit commands." << std::endl;
-		
 	}
 	// Present on swap chain.
 	VkPresentInfoKHR presentInfo = {};
@@ -127,7 +126,6 @@ void Renderer::cleanup(){
 		vkDestroyFence(device, inFlightFences[i], nullptr);
 	}
 	vkDestroyCommandPool(device, commandPool, nullptr);
-
 	vkDestroyDevice(device, nullptr);
 	// WARN: the instance was not created by the renderer, breaking ownership here.
 	VulkanUtilities::cleanupDebug(instance);
@@ -139,66 +137,30 @@ void Renderer::cleanupSwapChain() {
 	for(size_t i = 0; i < swapChainFramebuffers.size(); i++) {
 		vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
 	}
-
 	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-
 	vkDestroyPipeline(device, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyRenderPass(device, renderPass, nullptr);
-
 	for(size_t i = 0; i < swapChainImageViews.size(); i++) {
 		vkDestroyImageView(device, swapChainImageViews[i], nullptr);
 	}
-
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
 int Renderer::createSwapchain(const int width, const int height){
-	/// Swap chain setup.
+	
 	auto swapchainSupport = VulkanUtilities::querySwapchainSupport(physicalDevice, surface);
-	VkExtent2D extent = VulkanUtilities::chooseSwapExtent(swapchainSupport.capabilities, width, height);
+	swapChainExtent = VulkanUtilities::chooseSwapExtent(swapchainSupport.capabilities, width, height);
 	VkSurfaceFormatKHR surfaceFormat = VulkanUtilities::chooseSwapSurfaceFormat(swapchainSupport.formats);
+	swapChainImageFormat = surfaceFormat.format;
 	VkPresentModeKHR presentMode = VulkanUtilities::chooseSwapPresentMode(swapchainSupport.presentModes);
 	// Set the number of images in the chain.
 	uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
-	// maxImageCount = 0 if there is no constraint.
-	if(swapchainSupport.capabilities.maxImageCount > 0 && imageCount > swapchainSupport.capabilities.maxImageCount) {
-		imageCount = swapchainSupport.capabilities.maxImageCount;
-	}
-	VkSwapchainCreateInfoKHR createSwapInfo = {};
-	createSwapInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createSwapInfo.surface = surface;
-	createSwapInfo.minImageCount = imageCount;
-	createSwapInfo.imageFormat = surfaceFormat.format;
-	createSwapInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createSwapInfo.imageExtent = extent;
-	createSwapInfo.imageArrayLayers = 1;
-	createSwapInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	//VK_IMAGE_USAGE_TRANSFER_DST_BIT if not rendering directly to it.
-	// Establish a link with both queues, handling the case where they are the same.
-	uint32_t queueFamilyIndices[] = { (uint32_t)(queues.graphicsQueue), (uint32_t)(queues.presentQueue) };
-	if(queues.graphicsQueue != queues.presentQueue){
-		createSwapInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		createSwapInfo.queueFamilyIndexCount = 2;
-		createSwapInfo.pQueueFamilyIndices = queueFamilyIndices;
-	} else {
-		createSwapInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createSwapInfo.queueFamilyIndexCount = 0; // Optional
-		createSwapInfo.pQueueFamilyIndices = nullptr; // Optional
-	}
-	createSwapInfo.preTransform = swapchainSupport.capabilities.currentTransform;
-	createSwapInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createSwapInfo.presentMode = presentMode;
-	createSwapInfo.clipped = VK_TRUE;
-	createSwapInfo.oldSwapchain = VK_NULL_HANDLE;
-
-	if(vkCreateSwapchainKHR(device, &createSwapInfo, nullptr, &swapChain) != VK_SUCCESS) {
-		std::cerr << "Unable to create swap chain." << std::endl;
-		return 4;
-	}
+	
+	VulkanUtilities::createSwapchain(imageCount, device, surface, swapChainExtent, surfaceFormat, presentMode, queues,
+		swapchainSupport, swapChain);
 	// Retrieve images in the swap chain.
-	swapChainImageFormat = surfaceFormat.format;
-	swapChainExtent = extent;
+	
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());

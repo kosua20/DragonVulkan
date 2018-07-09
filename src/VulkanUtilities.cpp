@@ -369,3 +369,47 @@ int VulkanUtilities::createDevice(VkPhysicalDevice & physicalDevice, std::set<in
 	return 0;
 }
 
+
+int VulkanUtilities::createSwapchain(uint32_t & imageCount, VkDevice & device, VkSurfaceKHR & surface,
+	VkExtent2D & extent, VkSurfaceFormatKHR & surfaceFormat, VkPresentModeKHR & presentMode, 
+	ActiveQueues & queues, SwapchainSupportDetails & swapchainSupport, VkSwapchainKHR & swapchain){
+	
+	// maxImageCount = 0 if there is no constraint.
+	if(swapchainSupport.capabilities.maxImageCount > 0 && imageCount > swapchainSupport.capabilities.maxImageCount) {
+		imageCount = swapchainSupport.capabilities.maxImageCount;
+	}
+	/// Swap chain setup.
+	VkSwapchainCreateInfoKHR createSwapInfo = {};
+	createSwapInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createSwapInfo.surface = surface;
+	createSwapInfo.minImageCount = imageCount;
+	createSwapInfo.imageFormat = surfaceFormat.format;
+	createSwapInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createSwapInfo.imageExtent = extent;
+	createSwapInfo.imageArrayLayers = 1;
+	createSwapInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	//VK_IMAGE_USAGE_TRANSFER_DST_BIT if not rendering directly to it.
+	// Establish a link with both queues, handling the case where they are the same.
+	uint32_t queueFamilyIndices[] = { (uint32_t)(queues.graphicsQueue), (uint32_t)(queues.presentQueue) };
+	if(queues.graphicsQueue != queues.presentQueue){
+		createSwapInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createSwapInfo.queueFamilyIndexCount = 2;
+		createSwapInfo.pQueueFamilyIndices = queueFamilyIndices;
+	} else {
+		createSwapInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createSwapInfo.queueFamilyIndexCount = 0; // Optional
+		createSwapInfo.pQueueFamilyIndices = nullptr; // Optional
+	}
+	createSwapInfo.preTransform = swapchainSupport.capabilities.currentTransform;
+	createSwapInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createSwapInfo.presentMode = presentMode;
+	createSwapInfo.clipped = VK_TRUE;
+	createSwapInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	if(vkCreateSwapchainKHR(device, &createSwapInfo, nullptr, &swapchain) != VK_SUCCESS) {
+		std::cerr << "Unable to create swap chain." << std::endl;
+		return 3;
+	}
+	return 0;
+}
+

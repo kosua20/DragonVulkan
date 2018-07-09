@@ -48,6 +48,8 @@ public:
 	/// Debug.
 	static bool checkValidationLayerSupport();
 	static void cleanupDebug(VkInstance & instance);
+
+
 	/// General setup.
 	static int createInstance(const std::string & name, const bool debugEnabled, VkInstance & instance);
 
@@ -55,7 +57,11 @@ public:
 
 	static int createDevice(VkPhysicalDevice & physicalDevice, std::set<int> & queuesIds, VkPhysicalDeviceFeatures & features, VkDevice & device);
 
+	static int createSwapchain(uint32_t & imageCount, VkDevice & device, VkSurfaceKHR & surface,
+		VkExtent2D & extent, VkSurfaceFormatKHR & surfaceFormat, VkPresentModeKHR & presentMode,
+		ActiveQueues & queues, SwapchainSupportDetails & swapchainSupport, VkSwapchainKHR & swapchain);
 
+private:
 	static bool layersEnabled;
 	static VkDebugReportCallbackEXT callback;
 };
