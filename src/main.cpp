@@ -53,16 +53,46 @@ int main() {
 		std::cerr << "Unable to create GLFW window." << std::endl;
 		return 2;
 	}
-	/// Init Vulkan.
-	Renderer renderer;
-	renderer.init(window, enableValidationLayers);
+	//Get window effective size.
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
+
+	// Debug setup.
+	bool debugEnabled = enableValidationLayers;
+	// Check if the validation layers are needed and available.
+	if(enableValidationLayers && !VulkanUtilities::checkValidationLayerSupport()){
+		std::cerr << "Validation layers required and unavailable." << std::endl;
+		debugEnabled = false;
+	}
+
+	/// Vulkan instance creation.
+	VkInstance instance;
+	VulkanUtilities::createInstance("Dragon Vulkan", debugEnabled, instance);
 	
+	/// Surface window setup.
+	VkSurfaceKHR surface;
+	if(glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+		std::cerr << "Unable to create the surface." << std::endl;
+		return 2;
+	}
+
+	/// Create the renderer.	
+	Renderer renderer(instance, surface);
+	renderer.init(width, height);
 	
 	/// Main loop.
 	while(!glfwWindowShouldClose(window)){
 		glfwPollEvents();
 		/// Draw frame.
-		renderer.draw(window);
+		const VkResult result = renderer.draw();
+		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR){
+			int width = 0, height = 0;
+			while(width == 0 || height == 0) {
+				glfwGetFramebufferSize(window, &width, &height);
+				glfwWaitEvents();
+			}
+			renderer.recreateSwapchain(width, height);
+		}
 	}
 	
 

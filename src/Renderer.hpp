@@ -1,7 +1,6 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+#include "VulkanUtilities.hpp"
 
-#include <set>
 
 struct GLFWwindow;
 
@@ -9,46 +8,30 @@ class Renderer
 {
 public:
 
-	Renderer();
+	Renderer(VkInstance & instance, VkSurfaceKHR & surface);
 
 	~Renderer();
 
-	int init(GLFWwindow * window, const bool enableValidationLayers);
+	int init(const int width, const int height);
 	
 	void cleanup();
 	
-	int draw(GLFWwindow * window);
+	VkResult draw();
 	
+	int recreateSwapchain(const int width, const int height);
+
 protected:
-	bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);
-	int createSwapchain(GLFWwindow* window);
-	int recreateSwapchain(GLFWwindow* window);
+	
+	int createSwapchain(const int width, const int height);
 	void cleanupSwapChain();
-	struct ActiveQueues{
-		int graphicsQueue = -1;
-		int presentQueue = -1;
-
-		const bool isComplete() const {
-			return graphicsQueue >= 0 && presentQueue >= 0;
-		}
-
-		const std::set<int> getIndices() const {
-			return { graphicsQueue, presentQueue };
-		}
-	};
-	struct SwapchainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
+	
 private:
-	SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice adevice, VkSurfaceKHR asurface);
-	ActiveQueues getGraphicsQueueFamilyIndex(VkPhysicalDevice device, VkSurfaceKHR surface);
+
 	VkInstance instance;
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice;
 	VkDevice device;
-	VkDebugReportCallbackEXT callback;
+	
 	VkCommandPool commandPool;
 	VkSwapchainKHR swapChain;
 	VkFormat swapChainImageFormat;
@@ -61,7 +44,7 @@ private:
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 	std::vector<VkCommandBuffer> commandBuffers;
 	VkPipelineLayout pipelineLayout;
-	ActiveQueues queues;
+	VulkanUtilities::ActiveQueues queues;
 	bool debugEnabled;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
