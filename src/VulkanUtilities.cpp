@@ -421,3 +421,15 @@ int VulkanUtilities::createSwapchain(SwapchainParameters & parameters, VkSurface
 	return 0;
 }
 
+uint32_t VulkanUtilities::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties, VkPhysicalDevice & physicalDevice) {
+	VkPhysicalDeviceMemoryProperties memProperties;
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+			return i;
+		}
+	}
+	std::cerr << "Unable to find proper memory." << std::endl;
+	return 0;
+}
+

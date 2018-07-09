@@ -34,20 +34,22 @@ protected:
 	
 private:
 	
-	VkInstance instance;
-	VkSurfaceKHR surface;
-	VkPhysicalDevice physicalDevice;
-	VkDevice device;
+	VkInstance _instance;
+	VkSurfaceKHR _surface;
+	VkPhysicalDevice _physicalDevice;
+	VkDevice _device;
 	
 	VkPipeline graphicsPipeline;
 	VkPipelineLayout pipelineLayout;
 	VkRenderPass mainRenderPass;
 	
-	VulkanUtilities::ActiveQueues queues;
 	VkQueue graphicsQueue, presentQueue;
 	
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
+	
+	VkBuffer vertexBuffer;
+	VkDeviceMemory vertexBufferMemory;
 	
 	VkSwapchainKHR swapChain;
 	VulkanUtilities::SwapchainParameters swapchainParams;
