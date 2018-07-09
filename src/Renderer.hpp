@@ -1,5 +1,6 @@
 #pragma once
 #include "VulkanUtilities.hpp"
+#include <glm/glm.hpp>
 
 
 struct GLFWwindow;
@@ -18,39 +19,48 @@ public:
 	
 	VkResult draw();
 	
-	int recreateSwapchain(const int width, const int height);
+	int resize(const int width, const int height);
 
 protected:
 	
 	int createSwapchain(const int width, const int height);
+	
+	int fillSwapchain(VkRenderPass & renderPass);
+	int createMainRenderpass();
+	int createPipeline(VkPipelineShaderStageCreateInfo * shaderStages);
+	int generateCommandBuffers();
+	
 	void cleanupSwapChain();
 	
 private:
-
+	
 	VkInstance instance;
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice;
 	VkDevice device;
 	
-	VkCommandPool commandPool;
-	VkSwapchainKHR swapChain;
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
-	std::vector<VkImageView> swapChainImageViews;
-
-	std::vector<VkImage> swapChainImages;
-	VkRenderPass renderPass;
 	VkPipeline graphicsPipeline;
-	std::vector<VkFramebuffer> swapChainFramebuffers;
-	std::vector<VkCommandBuffer> commandBuffers;
 	VkPipelineLayout pipelineLayout;
+	VkRenderPass mainRenderPass;
+	
 	VulkanUtilities::ActiveQueues queues;
-	bool debugEnabled;
+	VkQueue graphicsQueue, presentQueue;
+	
+	VkCommandPool commandPool;
+	std::vector<VkCommandBuffer> commandBuffers;
+	
+	VkSwapchainKHR swapChain;
+	VulkanUtilities::SwapchainParameters swapchainParams;
+	
+	std::vector<VkImage> swapChainImages;
+	std::vector<VkImageView> swapChainImageViews;
+	std::vector<VkFramebuffer> swapChainFramebuffers;
+	
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
+	
 	size_t currentFrame = 0;
-	bool framebufferResized = false;
-	VkQueue graphicsQueue, presentQueue;
+	glm::vec2 _size = glm::vec2(0.0f,0.0f);
 };
 

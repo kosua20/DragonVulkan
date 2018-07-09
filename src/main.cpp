@@ -14,14 +14,8 @@
 
 #include "Renderer.hpp"
 
-const int WIDTH = 800;
-const int HEIGHT = 600;
-
-
-
-/// Validation layers shenanigans.
-
-
+const int WIDTH = 400;
+const int HEIGHT = 300;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -29,11 +23,11 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-
-
-
-
-
+/// GLFW callbacks.
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	auto renderer = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
+	renderer->resize(width, height);
+}
 
 /// Entry point.
 
@@ -75,10 +69,14 @@ int main() {
 		std::cerr << "Unable to create the surface." << std::endl;
 		return 2;
 	}
-
+	
 	/// Create the renderer.	
 	Renderer renderer(instance, surface);
 	renderer.init(width, height);
+	
+	/// Register callbacks.
+	glfwSetWindowUserPointer(window, &renderer);
+	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 	
 	/// Main loop.
 	while(!glfwWindowShouldClose(window)){
@@ -91,13 +89,17 @@ int main() {
 				glfwGetFramebufferSize(window, &width, &height);
 				glfwWaitEvents();
 			}
-			renderer.recreateSwapchain(width, height);
+			renderer.resize(width, height);
 		}
 	}
-	
 
 	/// Cleanup.
 	renderer.cleanup();
+	// Clean up instance and surface.
+	VulkanUtilities::cleanupDebug(instance);
+	vkDestroySurfaceKHR(instance, surface, nullptr);
+	vkDestroyInstance(instance, nullptr);
+	// Clean up GLFW.
 	glfwDestroyWindow(window);
 	glfwTerminate();
 

@@ -1,6 +1,7 @@
 #include "Renderer.hpp"
 #include "VulkanUtilities.hpp"
 #include <iostream>
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 Renderer::Renderer(VkInstance & anInstance, VkSurfaceKHR & aSurface)
@@ -17,6 +18,7 @@ Renderer::~Renderer()
 
 
 int Renderer::init(const int width, const int height){
+	_size = glm::vec2(width, height);
 	
 	/// Setup physical device (GPU).
 	VulkanUtilities::createPhysicalDevice(instance, surface, physicalDevice);
@@ -66,6 +68,7 @@ int Renderer::init(const int width, const int height){
 			return 3;
 		}
 	}
+	return 0;
 }
 
 VkResult Renderer::draw(){
@@ -75,9 +78,7 @@ VkResult Renderer::draw(){
 	// Acquire image from swap chain.
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-	if(result == VK_ERROR_OUT_OF_DATE_KHR) {
-		return result;
-	} else if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+	if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 		return result;
 	}
 	// Submit command buffer.
@@ -107,72 +108,26 @@ VkResult Renderer::draw(){
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr; // Optional
 	result = vkQueuePresentKHR(presentQueue, &presentInfo);
-	if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-		return result;
-	} else if(result != VK_SUCCESS) {
+	if(result != VK_SUCCESS) {
 		return result;
 	}
-
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	return result;
 }
 
-void Renderer::cleanup(){
-	vkDeviceWaitIdle(device);
-	cleanupSwapChain();
-	for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-		vkDestroyFence(device, inFlightFences[i], nullptr);
-	}
-	vkDestroyCommandPool(device, commandPool, nullptr);
-	vkDestroyDevice(device, nullptr);
-	// WARN: the instance was not created by the renderer, breaking ownership here.
-	VulkanUtilities::cleanupDebug(instance);
-	vkDestroySurfaceKHR(instance, surface, nullptr);
-	vkDestroyInstance(instance, nullptr);
-}
-
-void Renderer::cleanupSwapChain() {
-	for(size_t i = 0; i < swapChainFramebuffers.size(); i++) {
-		vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
-	}
-	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
-	vkDestroyPipeline(device, graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-	vkDestroyRenderPass(device, renderPass, nullptr);
-	for(size_t i = 0; i < swapChainImageViews.size(); i++) {
-		vkDestroyImageView(device, swapChainImageViews[i], nullptr);
-	}
-	vkDestroySwapchainKHR(device, swapChain, nullptr);
-}
-
-int Renderer::createSwapchain(const int width, const int height){
-	
-	auto swapchainSupport = VulkanUtilities::querySwapchainSupport(physicalDevice, surface);
-	swapChainExtent = VulkanUtilities::chooseSwapExtent(swapchainSupport.capabilities, width, height);
-	VkSurfaceFormatKHR surfaceFormat = VulkanUtilities::chooseSwapSurfaceFormat(swapchainSupport.formats);
-	swapChainImageFormat = surfaceFormat.format;
-	VkPresentModeKHR presentMode = VulkanUtilities::chooseSwapPresentMode(swapchainSupport.presentModes);
-	// Set the number of images in the chain.
-	uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
-	
-	VulkanUtilities::createSwapchain(imageCount, device, surface, swapChainExtent, surfaceFormat, presentMode, queues,
-		swapchainSupport, swapChain);
+int Renderer::fillSwapchain(VkRenderPass & renderPass){
 	// Retrieve images in the swap chain.
-	
-	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-	swapChainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+	vkGetSwapchainImagesKHR(device, swapChain, &swapchainParams.count, nullptr);
+	swapChainImages.resize(swapchainParams.count);
+	vkGetSwapchainImagesKHR(device, swapChain, &swapchainParams.count, swapChainImages.data());
 	// Create views for each image.
-
 	swapChainImageViews.resize(swapChainImages.size());
 	for(size_t i = 0; i < swapChainImages.size(); i++) {
 		VkImageViewCreateInfo createImageViewInfo = {};
 		createImageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		createImageViewInfo.image = swapChainImages[i];
 		createImageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createImageViewInfo.format = swapChainImageFormat;
+		createImageViewInfo.format = swapchainParams.surface.format;
 		createImageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createImageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
 		createImageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -187,10 +142,33 @@ int Renderer::createSwapchain(const int width, const int height){
 			return 4;
 		}
 	}
+	// Swap framebuffers.
+	swapChainFramebuffers.resize(swapChainImageViews.size());
+	for(size_t i = 0; i < swapChainImageViews.size(); i++){
+		VkImageView attachments[] = {
+			swapChainImageViews[i]
+		};
+		
+		VkFramebufferCreateInfo framebufferInfo = {};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = swapchainParams.extent.width;
+		framebufferInfo.height = swapchainParams.extent.height;
+		framebufferInfo.layers = 1;
+		if(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
+			std::cerr << "Unable to create swap framebuffers." << std::endl;
+			return 4;
+		}
+	}
+	return 0;
+}
 
+int Renderer::createMainRenderpass(){
 	/// Render pass.
 	VkAttachmentDescription colorAttachment = {};
-	colorAttachment.format = swapChainImageFormat;
+	colorAttachment.format = swapchainParams.surface.format;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -205,13 +183,14 @@ int Renderer::createSwapchain(const int width, const int height){
 	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef; // linked to the layout in fragment shader.
-
+	
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.attachmentCount = 1;
 	renderPassInfo.pAttachments = &colorAttachment;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+	
 	// Dependencies.
 	VkSubpassDependency dependency = {};
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -222,32 +201,16 @@ int Renderer::createSwapchain(const int width, const int height){
 	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
-
-	if(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+	
+	if(vkCreateRenderPass(device, &renderPassInfo, nullptr, &mainRenderPass) != VK_SUCCESS) {
 		std::cerr << "Unable to create render pass." << std::endl;
 		return 3;
 	}
+	return 0;
+}
 
-	/// Shaders.
-	auto vertShaderCode = VulkanUtilities::readFile("resources/shaders/vert.spv");
-	auto fragShaderCode = VulkanUtilities::readFile("resources/shaders/frag.spv");
-	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(device, vertShaderCode);
-	VkShaderModule fragShaderModule = VulkanUtilities::createShaderModule(device, fragShaderCode);
-	// Vertex shader module.
-	VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
-	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = vertShaderModule;
-	vertShaderStageInfo.pName = "main";
-	// Fragment shader module.
-	VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
-	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragShaderModule;
-	fragShaderStageInfo.pName = "main";
-	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
-
-	/// Pipeline.
+int Renderer::createPipeline(VkPipelineShaderStageCreateInfo * shaderStages){
+	
 	// Vertex input format.
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -260,24 +223,24 @@ int Renderer::createSwapchain(const int width, const int height){
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
-	// Viezport and scissor.
+	// Viewport and scissor.
 	VkViewport viewport = {};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = (float)swapChainExtent.width;
-	viewport.height = (float)swapChainExtent.height;
+	viewport.width = (float)swapchainParams.extent.width;
+	viewport.height = (float)swapchainParams.extent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	VkRect2D scissor = {};
 	scissor.offset = { 0, 0 };
-	scissor.extent = swapChainExtent;
+	scissor.extent = swapchainParams.extent;
 	VkPipelineViewportStateCreateInfo viewportState = {};
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.viewportCount = 1;
 	viewportState.pViewports = &viewport;
 	viewportState.scissorCount = 1;
 	viewportState.pScissors = &scissor;
-	// Ratserization.
+	// Rasterization.
 	VkPipelineRasterizationStateCreateInfo rasterizer = {};
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizer.depthClampEnable = VK_FALSE;
@@ -303,7 +266,7 @@ int Renderer::createSwapchain(const int width, const int height){
 	colorBlending.attachmentCount = 1;
 	colorBlending.pAttachments = &colorBlendAttachment;
 	// Dynamic state (none).
-
+	
 	// Finally, the layout.
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -330,44 +293,18 @@ int Renderer::createSwapchain(const int width, const int height){
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr; // Optional
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.renderPass = mainRenderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
-
-
 	if(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
 		std::cerr << "Unable to create graphics pipeline." << std::endl;
 		return 3;
 	}
-	vkDestroyShaderModule(device, fragShaderModule, nullptr);
-	vkDestroyShaderModule(device, vertShaderModule, nullptr);
+	return 0;
+}
 
-	// Swap framebuffers.
-	swapChainFramebuffers.resize(swapChainImageViews.size());
-	for(size_t i = 0; i < swapChainImageViews.size(); i++){
-		VkImageView attachments[] = {
-			swapChainImageViews[i]
-		};
-
-		VkFramebufferCreateInfo framebufferInfo = {};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = renderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = swapChainExtent.width;
-		framebufferInfo.height = swapChainExtent.height;
-		framebufferInfo.layers = 1;
-
-		if(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-			std::cerr << "Unable to create swap framebuffers." << std::endl;
-			return 4;
-		}
-
-	}
-
-
-	// Command buffers.
+int Renderer::generateCommandBuffers(){
 	commandBuffers.resize(swapChainFramebuffers.size());
 	VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -383,7 +320,7 @@ int Renderer::createSwapchain(const int width, const int height){
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 		beginInfo.pInheritanceInfo = nullptr; // Optional
-
+		
 		if(vkBeginCommandBuffer(commandBuffers[i], &beginInfo) != VK_SUCCESS) {
 			std::cerr << "Unable to begin recording command buffer." << std::endl;
 			return 5;
@@ -391,10 +328,10 @@ int Renderer::createSwapchain(const int width, const int height){
 		// Render pass commands.
 		VkRenderPassBeginInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = renderPass;
+		renderPassInfo.renderPass = mainRenderPass;
 		renderPassInfo.framebuffer = swapChainFramebuffers[i];
 		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = swapChainExtent;
+		renderPassInfo.renderArea.extent = swapchainParams.extent;
 		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
@@ -407,10 +344,83 @@ int Renderer::createSwapchain(const int width, const int height){
 			return 5;
 		}
 	}
+	return 0;
 }
 
-int Renderer::recreateSwapchain(const int width, const int height){
+int Renderer::createSwapchain(const int width, const int height){
+	_size[0] = width;
+	_size[1] = height;
+	
+	swapchainParams = VulkanUtilities::generateSwapchainParameters(physicalDevice, surface, width, height);
+	VulkanUtilities::createSwapchain(swapchainParams, surface, device, queues, swapChain);
+
+	/// Render pass.
+	createMainRenderpass();
+
+	/// Shaders.
+	auto vertShaderCode = VulkanUtilities::readFile("resources/shaders/vert.spv");
+	auto fragShaderCode = VulkanUtilities::readFile("resources/shaders/frag.spv");
+	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(device, vertShaderCode);
+	VkShaderModule fragShaderModule = VulkanUtilities::createShaderModule(device, fragShaderCode);
+	// Vertex shader module.
+	VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
+	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.pName = "main";
+	// Fragment shader module.
+	VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
+	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.pName = "main";
+	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+	/// Pipeline.
+	createPipeline(shaderStages);
+
+	vkDestroyShaderModule(device, fragShaderModule, nullptr);
+	vkDestroyShaderModule(device, vertShaderModule, nullptr);
+	
+	fillSwapchain(mainRenderPass);
+
+	// Command buffers.
+	generateCommandBuffers();
+	return 0;
+}
+
+int Renderer::resize(const int width, const int height){
+	if(width == _size[0] && height == _size[1]){
+		return 0;
+	}
 	vkDeviceWaitIdle(device);
 	cleanupSwapChain();
 	return createSwapchain(width, height);
+}
+
+void Renderer::cleanup(){
+	vkDeviceWaitIdle(device);
+	cleanupSwapChain();
+	for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+		vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+		vkDestroyFence(device, inFlightFences[i], nullptr);
+	}
+	vkDestroyCommandPool(device, commandPool, nullptr);
+	vkDestroyDevice(device, nullptr);
+	
+}
+
+void Renderer::cleanupSwapChain() {
+	for(size_t i = 0; i < swapChainFramebuffers.size(); i++) {
+		vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+	}
+	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+	vkDestroyPipeline(device, graphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+	vkDestroyRenderPass(device, mainRenderPass, nullptr);
+	for(size_t i = 0; i < swapChainImageViews.size(); i++) {
+		vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+	}
+	vkDestroySwapchainKHR(device, swapChain, nullptr);
 }

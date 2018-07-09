@@ -201,6 +201,16 @@ VkPresentModeKHR VulkanUtilities::chooseSwapPresentMode(const std::vector<VkPres
 	return bestMode;
 }
 
+VulkanUtilities::SwapchainParameters VulkanUtilities::generateSwapchainParameters(VkPhysicalDevice & physicalDevice, VkSurfaceKHR & surface, const int width, const int height){
+	SwapchainParameters parameters;
+	parameters.support = VulkanUtilities::querySwapchainSupport(physicalDevice, surface);
+	parameters.extent = VulkanUtilities::chooseSwapExtent(parameters.support.capabilities, width, height);
+	parameters.surface = VulkanUtilities::chooseSwapSurfaceFormat(parameters.support.formats);
+	parameters.mode = VulkanUtilities::chooseSwapPresentMode(parameters.support.presentModes);
+	// Set the number of images in the chain.
+	parameters.count = parameters.support.capabilities.minImageCount + 1;
+	return parameters;
+}
 
 /// Debug.
 
@@ -370,22 +380,20 @@ int VulkanUtilities::createDevice(VkPhysicalDevice & physicalDevice, std::set<in
 }
 
 
-int VulkanUtilities::createSwapchain(uint32_t & imageCount, VkDevice & device, VkSurfaceKHR & surface,
-	VkExtent2D & extent, VkSurfaceFormatKHR & surfaceFormat, VkPresentModeKHR & presentMode, 
-	ActiveQueues & queues, SwapchainSupportDetails & swapchainSupport, VkSwapchainKHR & swapchain){
+int VulkanUtilities::createSwapchain(SwapchainParameters & parameters, VkSurfaceKHR & surface, VkDevice & device, ActiveQueues & queues,VkSwapchainKHR & swapchain){
 	
 	// maxImageCount = 0 if there is no constraint.
-	if(swapchainSupport.capabilities.maxImageCount > 0 && imageCount > swapchainSupport.capabilities.maxImageCount) {
-		imageCount = swapchainSupport.capabilities.maxImageCount;
+	if(parameters.support.capabilities.maxImageCount > 0 && parameters.count > parameters.support.capabilities.maxImageCount) {
+		parameters.count = parameters.support.capabilities.maxImageCount;
 	}
 	/// Swap chain setup.
 	VkSwapchainCreateInfoKHR createSwapInfo = {};
 	createSwapInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createSwapInfo.surface = surface;
-	createSwapInfo.minImageCount = imageCount;
-	createSwapInfo.imageFormat = surfaceFormat.format;
-	createSwapInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createSwapInfo.imageExtent = extent;
+	createSwapInfo.minImageCount = parameters.count;
+	createSwapInfo.imageFormat = parameters.surface.format;
+	createSwapInfo.imageColorSpace = parameters.surface.colorSpace;
+	createSwapInfo.imageExtent = parameters.extent;
 	createSwapInfo.imageArrayLayers = 1;
 	createSwapInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	//VK_IMAGE_USAGE_TRANSFER_DST_BIT if not rendering directly to it.
@@ -400,9 +408,9 @@ int VulkanUtilities::createSwapchain(uint32_t & imageCount, VkDevice & device, V
 		createSwapInfo.queueFamilyIndexCount = 0; // Optional
 		createSwapInfo.pQueueFamilyIndices = nullptr; // Optional
 	}
-	createSwapInfo.preTransform = swapchainSupport.capabilities.currentTransform;
+	createSwapInfo.preTransform = parameters.support.capabilities.currentTransform;
 	createSwapInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createSwapInfo.presentMode = presentMode;
+	createSwapInfo.presentMode = parameters.mode;
 	createSwapInfo.clipped = VK_TRUE;
 	createSwapInfo.oldSwapchain = VK_NULL_HANDLE;
 
