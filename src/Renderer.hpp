@@ -48,8 +48,10 @@ private:
 	VkCommandPool commandPool;
 	std::vector<VkCommandBuffer> commandBuffers;
 	
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexBufferMemory;
+	VkBuffer _vertexBuffer;
+	VkDeviceMemory _vertexBufferMemory;
+	VkBuffer _indexBuffer;
+	VkDeviceMemory _indexBufferMemory;
 	
 	VkSwapchainKHR swapChain;
 	VulkanUtilities::SwapchainParameters swapchainParams;
