@@ -35,6 +35,13 @@ struct Vertex {
 	
 };
 
+struct UniformBufferObject {
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
+
 const std::vector<Vertex> vertices = {
 	{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
 	{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
@@ -89,7 +96,20 @@ int Renderer::init(const int width, const int height){
 	}
 
 	/// Create the swap chain.
-	createSwapchain(width, height);
+	_size[0] = width;
+	_size[1] = height;
+
+	VulkanUtilities::ActiveQueues queues = VulkanUtilities::getGraphicsQueueFamilyIndex(_physicalDevice, _surface);
+	_swapchainParams = VulkanUtilities::generateSwapchainParameters(_physicalDevice, _surface, width, height);
+	VulkanUtilities::createSwapchain(_swapchainParams, _surface, _device, queues, _swapchain);
+
+	/// Render pass.
+	createMainRenderpass();
+
+	/// Pipeline.
+	createPipeline();
+
+	fillSwapchain(_mainRenderPass);
 	
 	/// Vertex buffer.
 	// TODO: bundle all of this away.
@@ -287,8 +307,27 @@ int Renderer::createMainRenderpass(){
 	return 0;
 }
 
-int Renderer::createPipeline(VkPipelineShaderStageCreateInfo * shaderStages){
+int Renderer::createPipeline(){
 	
+	/// Shaders.
+	auto vertShaderCode = VulkanUtilities::readFile("resources/shaders/vert.spv");
+	auto fragShaderCode = VulkanUtilities::readFile("resources/shaders/frag.spv");
+	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(_device, vertShaderCode);
+	VkShaderModule fragShaderModule = VulkanUtilities::createShaderModule(_device, fragShaderCode);
+	// Vertex shader module.
+	VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
+	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageInfo.module = vertShaderModule;
+	vertShaderStageInfo.pName = "main";
+	// Fragment shader module.
+	VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
+	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageInfo.module = fragShaderModule;
+	fragShaderStageInfo.pName = "main";
+	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
 	// Vertex input format.
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -383,6 +422,11 @@ int Renderer::createPipeline(VkPipelineShaderStageCreateInfo * shaderStages){
 		std::cerr << "Unable to create graphics pipeline." << std::endl;
 		return 3;
 	}
+
+
+	vkDestroyShaderModule(_device, fragShaderModule, nullptr);
+	vkDestroyShaderModule(_device, vertShaderModule, nullptr);
+
 	return 0;
 }
 
@@ -447,30 +491,12 @@ int Renderer::createSwapchain(const int width, const int height){
 	/// Render pass.
 	createMainRenderpass();
 
-	/// Shaders.
-	auto vertShaderCode = VulkanUtilities::readFile("resources/shaders/vert.spv");
-	auto fragShaderCode = VulkanUtilities::readFile("resources/shaders/frag.spv");
-	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(_device, vertShaderCode);
-	VkShaderModule fragShaderModule = VulkanUtilities::createShaderModule(_device, fragShaderCode);
-	// Vertex shader module.
-	VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
-	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageInfo.module = vertShaderModule;
-	vertShaderStageInfo.pName = "main";
-	// Fragment shader module.
-	VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
-	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageInfo.module = fragShaderModule;
-	fragShaderStageInfo.pName = "main";
-	VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+	
 
 	/// Pipeline.
-	createPipeline(shaderStages);
+	createPipeline();
 
-	vkDestroyShaderModule(_device, fragShaderModule, nullptr);
-	vkDestroyShaderModule(_device, vertShaderModule, nullptr);
+	
 	
 	fillSwapchain(_mainRenderPass);
 	

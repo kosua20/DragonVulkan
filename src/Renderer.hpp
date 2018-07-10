@@ -27,7 +27,7 @@ protected:
 	
 	int fillSwapchain(VkRenderPass & renderPass);
 	int createMainRenderpass();
-	int createPipeline(VkPipelineShaderStageCreateInfo * shaderStages);
+	int createPipeline();
 	int generateCommandBuffers();
 	
 	void cleanupSwapChain();
