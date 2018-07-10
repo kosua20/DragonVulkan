@@ -18,6 +18,11 @@
 		F45AD31F20F3C19600F75298 /* libglfw.3.3.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = F45AD31D20F3C18800F75298 /* libglfw.3.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F45AD32120F3C25000F75298 /* libglfw.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F45AD32020F3C25000F75298 /* libglfw.3.dylib */; };
 		F45AD32220F3C25800F75298 /* libglfw.3.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = F45AD32020F3C25000F75298 /* libglfw.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		F4BEEB6D20F5544E0008A7DB /* MeshUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB6A20F5544D0008A7DB /* MeshUtilities.cpp */; };
+		F4BEEB6E20F5544E0008A7DB /* Resources.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB6C20F5544D0008A7DB /* Resources.cpp */; };
+		F4BEEB7F20F558D80008A7DB /* Input.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7A20F558D70008A7DB /* Input.cpp */; };
+		F4BEEB8020F558D80008A7DB /* ControllableCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7D20F558D80008A7DB /* ControllableCamera.cpp */; };
+		F4BEEB8120F558D80008A7DB /* Camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7E20F558D80008A7DB /* Camera.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,6 +52,17 @@
 		F45AD31820F3C08300F75298 /* libvulkan.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libvulkan.1.dylib; path = ../../VulkanSDK/macOS/lib/libvulkan.1.dylib; sourceTree = "<group>"; };
 		F45AD31D20F3C18800F75298 /* libglfw.3.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.3.dylib; path = "libs/glfw3/mac/lib-mac/libglfw.3.3.dylib"; sourceTree = "<group>"; };
 		F45AD32020F3C25000F75298 /* libglfw.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.dylib; path = "libs/glfw3/mac/lib-mac/libglfw.3.dylib"; sourceTree = "<group>"; };
+		F4BEEB6920F5544C0008A7DB /* Resources.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Resources.hpp; sourceTree = "<group>"; };
+		F4BEEB6A20F5544D0008A7DB /* MeshUtilities.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MeshUtilities.cpp; sourceTree = "<group>"; };
+		F4BEEB6B20F5544D0008A7DB /* MeshUtilities.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MeshUtilities.hpp; sourceTree = "<group>"; };
+		F4BEEB6C20F5544D0008A7DB /* Resources.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Resources.cpp; sourceTree = "<group>"; };
+		F4BEEB6F20F5545D0008A7DB /* stb_image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stb_image.h; sourceTree = "<group>"; };
+		F4BEEB7920F558D70008A7DB /* ControllableCamera.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ControllableCamera.hpp; sourceTree = "<group>"; };
+		F4BEEB7A20F558D70008A7DB /* Input.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Input.cpp; sourceTree = "<group>"; };
+		F4BEEB7B20F558D70008A7DB /* Camera.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Camera.hpp; sourceTree = "<group>"; };
+		F4BEEB7C20F558D70008A7DB /* Input.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Input.hpp; sourceTree = "<group>"; };
+		F4BEEB7D20F558D80008A7DB /* ControllableCamera.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ControllableCamera.cpp; sourceTree = "<group>"; };
+		F4BEEB7E20F558D80008A7DB /* Camera.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Camera.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +105,8 @@
 				F45AD30D20F3BF6200F75298 /* VulkanUtilities.cpp */,
 				F45AD30E20F3BF6200F75298 /* VulkanUtilities.hpp */,
 				F41F137420F3BF32008C2905 /* main.cpp */,
+				F4BEEB8220F558E20008A7DB /* input */,
+				F4BEEB7720F558BC0008A7DB /* resources */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -102,6 +120,31 @@
 				F45AD31820F3C08300F75298 /* libvulkan.1.dylib */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F4BEEB7720F558BC0008A7DB /* resources */ = {
+			isa = PBXGroup;
+			children = (
+				F4BEEB6C20F5544D0008A7DB /* Resources.cpp */,
+				F4BEEB6920F5544C0008A7DB /* Resources.hpp */,
+				F4BEEB6A20F5544D0008A7DB /* MeshUtilities.cpp */,
+				F4BEEB6B20F5544D0008A7DB /* MeshUtilities.hpp */,
+				F4BEEB6F20F5545D0008A7DB /* stb_image.h */,
+			);
+			path = resources;
+			sourceTree = "<group>";
+		};
+		F4BEEB8220F558E20008A7DB /* input */ = {
+			isa = PBXGroup;
+			children = (
+				F4BEEB7E20F558D80008A7DB /* Camera.cpp */,
+				F4BEEB7B20F558D70008A7DB /* Camera.hpp */,
+				F4BEEB7D20F558D80008A7DB /* ControllableCamera.cpp */,
+				F4BEEB7920F558D70008A7DB /* ControllableCamera.hpp */,
+				F4BEEB7A20F558D70008A7DB /* Input.cpp */,
+				F4BEEB7C20F558D70008A7DB /* Input.hpp */,
+			);
+			path = input;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -177,9 +220,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4BEEB7F20F558D80008A7DB /* Input.cpp in Sources */,
 				F45AD30F20F3BF6200F75298 /* Renderer.cpp in Sources */,
 				F45AD31020F3BF6200F75298 /* VulkanUtilities.cpp in Sources */,
+				F4BEEB8020F558D80008A7DB /* ControllableCamera.cpp in Sources */,
+				F4BEEB8120F558D80008A7DB /* Camera.cpp in Sources */,
 				F41F137520F3BF32008C2905 /* main.cpp in Sources */,
+				F4BEEB6E20F5544E0008A7DB /* Resources.cpp in Sources */,
+				F4BEEB6D20F5544E0008A7DB /* MeshUtilities.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
