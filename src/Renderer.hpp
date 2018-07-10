@@ -1,7 +1,9 @@
 #pragma once
 #include "VulkanUtilities.hpp"
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
-
+#include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
 
 struct GLFWwindow;
 
@@ -43,6 +45,11 @@ private:
 	VkPipelineLayout _pipelineLayout;
 	VkRenderPass _mainRenderPass;
 	
+	
+	VkDescriptorSetLayout _descriptorSetLayout;
+	VkDescriptorPool _descriptorPool;
+	std::vector<VkDescriptorSet> _descriptorSets;
+	
 	VkQueue _graphicsQueue, _presentQueue;
 	
 	VkCommandPool _commandPool;
@@ -52,6 +59,9 @@ private:
 	VkDeviceMemory _vertexBufferMemory;
 	VkBuffer _indexBuffer;
 	VkDeviceMemory _indexBufferMemory;
+	
+	std::vector<VkBuffer> _uniformBuffers;
+	std::vector<VkDeviceMemory> _uniformBuffersMemory;
 	
 	VkSwapchainKHR _swapchain;
 	VulkanUtilities::SwapchainParameters _swapchainParams;
