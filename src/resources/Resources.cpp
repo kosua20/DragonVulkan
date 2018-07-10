@@ -57,7 +57,7 @@ int Resources::loadImage(const std::string & path, unsigned int & width, unsigne
 	}
 	
 	stbi_set_flip_vertically_on_load(flip);
-	
+	// Force 4 channels.
 	channels = 4;
 	int localWidth = 0;
 	int localHeight = 0;

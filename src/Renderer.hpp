@@ -55,6 +55,9 @@ private:
 	VkCommandPool _commandPool;
 	std::vector<VkCommandBuffer> _commandBuffers;
 	
+	VkImage _textureImage;
+	VkDeviceMemory _textureImageMemory;
+	
 	VkBuffer _vertexBuffer;
 	VkDeviceMemory _vertexBufferMemory;
 	VkBuffer _indexBuffer;

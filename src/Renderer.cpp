@@ -127,6 +127,31 @@ int Renderer::init(const int width, const int height){
 
 	fillSwapchain(_mainRenderPass);
 	
+	/// Images.
+	unsigned int texWidth, texHeight, texChannels;
+	void* image;
+	int rett = Resources::loadImage("resources/statue.png", texWidth, texHeight, texChannels, &image, false);
+	if(rett != 0){ std::cerr << "Error loading image." << std::endl; }
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
+	VkBuffer stagingBufferImg;
+	VkDeviceMemory stagingBufferMemoryImg;
+	VulkanUtilities::createBuffer(_physicalDevice, _device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBufferImg, stagingBufferMemoryImg);
+	void* dataImg;
+	vkMapMemory(_device, stagingBufferMemoryImg, 0, imageSize, 0, &dataImg);
+	memcpy(dataImg, image, static_cast<size_t>(imageSize));
+	vkUnmapMemory(_device, stagingBufferMemoryImg);
+	free(image);
+	// Create texture.
+	VulkanUtilities::createImage(_physicalDevice, _device, texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _textureImage, _textureImageMemory);
+	// Prepare the image layout for the transfer (we don't care about what's in it before the copy).
+	VulkanUtilities::transitionImageLayout(_device, _commandPool, _graphicsQueue, _textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	// Copy from the buffer to the image.
+	VulkanUtilities::copyBufferToImage(stagingBufferImg, _textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), _device, _commandPool, _graphicsQueue);
+	// Optimize the layout of the image for sampling.
+	VulkanUtilities::transitionImageLayout(_device, _commandPool, _graphicsQueue, _textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	vkDestroyBuffer(_device, stagingBufferImg, nullptr);
+	vkFreeMemory(_device, stagingBufferMemoryImg, nullptr);
+	
 	/// Vertex buffer.
 	// TODO: bundle all of this away.
 	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
@@ -604,6 +629,8 @@ void Renderer::cleanup(){
 	vkDeviceWaitIdle(_device);
 	cleanupSwapChain();
 	
+	vkDestroyImage(_device, _textureImage, nullptr);
+	vkFreeMemory(_device, _textureImageMemory, nullptr);
 	vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
 	vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, nullptr);
 	for (size_t i = 0; i < _swapchainImages.size(); i++) {
