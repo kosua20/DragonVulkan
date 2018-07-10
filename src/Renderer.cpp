@@ -1,5 +1,6 @@
 #include "Renderer.hpp"
 #include "VulkanUtilities.hpp"
+#include "resources/Resources.hpp"
 #include <iostream>
 #include <array>
 
@@ -389,10 +390,11 @@ int Renderer::createMainRenderpass(){
 int Renderer::createPipeline(){
 	
 	/// Shaders.
-	auto vertShaderCode = VulkanUtilities::readFile("resources/shaders/vert.spv");
-	auto fragShaderCode = VulkanUtilities::readFile("resources/shaders/frag.spv");
-	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(_device, vertShaderCode);
-	VkShaderModule fragShaderModule = VulkanUtilities::createShaderModule(_device, fragShaderCode);
+	
+	
+	
+	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(_device, "resources/shaders/vert.spv");
+	VkShaderModule fragShaderModule = VulkanUtilities::createShaderModule(_device, "resources/shaders/frag.spv");
 	// Vertex shader module.
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

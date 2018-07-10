@@ -1,5 +1,5 @@
 #include "VulkanUtilities.hpp"
-
+#include "resources/Resources.hpp"
 #ifdef _WIN32
 #define NOMINMAX
 #endif
@@ -25,27 +25,15 @@ VkDebugReportCallbackEXT VulkanUtilities::callback;
 
 /// Shader modules handling.
 
-std::vector<char> VulkanUtilities::readFile(const std::string& filename) {
-	std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-	if(!file.is_open()){
-		std::cerr << "Failed to open \"" << filename << "\"" << std::endl;
-		return {};
-	}
-	size_t fileSize = (size_t)file.tellg();
-	std::vector<char> buffer(fileSize);
-	file.seekg(0);
-	file.read(buffer.data(), fileSize);
-	file.close();
-	return buffer;
-}
-
-VkShaderModule VulkanUtilities::createShaderModule(VkDevice device, const std::vector<char>& code) {
+VkShaderModule VulkanUtilities::createShaderModule(VkDevice device, const std::string& path) {
+	size_t size = 0;
+	char * data = Resources::loadRawDataFromExternalFile(path, size);
+	
 	VkShaderModuleCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
+	createInfo.codeSize = size;
 	// We need to cast from char to uint32_t (opcodes).
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(data);
 	VkShaderModule shaderModule;
 	if(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
 		std::cerr << "Unable to create shader module." << std::endl;

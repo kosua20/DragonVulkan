@@ -13,6 +13,7 @@
 #include <string>
 
 #include "Renderer.hpp"
+#include "Input.hpp"
 
 const int WIDTH = 400;
 const int HEIGHT = 300;
@@ -24,10 +25,27 @@ const bool enableValidationLayers = true;
 #endif
 
 /// GLFW callbacks.
-static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-	auto renderer = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
-	renderer->resize(width, height);
+static void resize_callback(GLFWwindow* window, int width, int height) {
+	Input::manager().resizeEvent(width, height);
 }
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+	Input::manager().keyPressedEvent(key, action);
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
+	Input::manager().mousePressedEvent(button, action); // Could pass mods to simplify things.
+}
+
+void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos){
+	Input::manager().mouseMovedEvent(xpos, ypos);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
+	Input::manager().mouseScrolledEvent(xoffset, yoffset);
+}
+
+
 
 /// Entry point.
 
@@ -73,22 +91,31 @@ int main() {
 	/// Create the renderer.	
 	Renderer renderer(instance, surface);
 	renderer.init(width, height);
+	Input::manager().resizeEvent(width, height);
 	
 	/// Register callbacks.
 	glfwSetWindowUserPointer(window, &renderer);
-	glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+	glfwSetFramebufferSizeCallback(window, resize_callback);
+	glfwSetKeyCallback(window,key_callback);					// Pressing a key
+	glfwSetMouseButtonCallback(window,mouse_button_callback);	// Clicking the mouse buttons
+	glfwSetCursorPosCallback(window,cursor_pos_callback);		// Moving the cursor
+	glfwSetScrollCallback(window,scroll_callback);				// Scrolling
+	
 	
 	/// Main loop.
 	while(!glfwWindowShouldClose(window)){
-		glfwPollEvents();
+		
+		Input::manager().update();
 		/// Draw frame.
 		const VkResult result = renderer.draw();
-		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR){
+		// Handle resizing.
+		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || Input::manager().resized()){
 			int width = 0, height = 0;
 			while(width == 0 || height == 0) {
 				glfwGetFramebufferSize(window, &width, &height);
 				glfwWaitEvents();
 			}
+			Input::manager().resizeEvent(width, height);
 			renderer.resize(width, height);
 		}
 	}

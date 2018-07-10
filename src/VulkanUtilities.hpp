@@ -9,8 +9,7 @@ class VulkanUtilities {
 public:
 
 	/// Shaders.
-	static std::vector<char> readFile(const std::string& filename);
-	static VkShaderModule createShaderModule(VkDevice device, const std::vector<char>& code);
+	static VkShaderModule createShaderModule(VkDevice device, const std::string& path);
 
 	/// Queues.
 	struct ActiveQueues{
