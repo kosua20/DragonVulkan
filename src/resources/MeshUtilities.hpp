@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-#include <glm/glm.hpp>
+#include "common.hpp"
 
 // A mesh will be represented by a struct. For now, material information and elements/groups are not retrieved from the .obj.
 typedef struct {

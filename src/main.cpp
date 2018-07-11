@@ -1,9 +1,4 @@
-#ifdef _WIN32
-#define NOMINMAX
-#endif
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "common.hpp"
 
 #include <iostream>
 #include <vector>
