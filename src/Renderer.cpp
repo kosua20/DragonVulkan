@@ -143,8 +143,7 @@ int Renderer::init(const int width, const int height){
 	/// Pipeline.
 	createPipeline();
 	
-	/// Create depth buffer.
-	createDepthBuffer();
+	
 	fillSwapchain(_mainRenderPass);
 	
 	/// Images.
@@ -391,6 +390,9 @@ void Renderer::createDepthBuffer(){
 }
 
 int Renderer::fillSwapchain(VkRenderPass & renderPass){
+	/// Create depth buffer.
+	createDepthBuffer();
+	
 	// Retrieve images in the swap chain.
 	vkGetSwapchainImagesKHR(_device, _swapchain, &_swapchainParams.count, nullptr);
 	_swapchainImages.resize(_swapchainParams.count);
@@ -696,7 +698,6 @@ int Renderer::resize(const int width, const int height){
 	/// Pipeline.
 	createPipeline();
 	
-	createDepthBuffer();
 	fillSwapchain(_mainRenderPass);
 	
 	// Command buffers.
