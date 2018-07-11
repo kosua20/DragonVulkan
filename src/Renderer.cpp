@@ -75,7 +75,7 @@ Renderer::~Renderer()
 
 int Renderer::init(const int width, const int height){
 	_size = glm::vec2(width, height);
-	
+
 	/// Setup physical device (GPU).
 	VulkanUtilities::createPhysicalDevice(_instance, _surface, _physicalDevice);
 
@@ -318,6 +318,9 @@ int Renderer::init(const int width, const int height){
 }
 
 VkResult Renderer::draw(){
+	_camera.update();
+	_camera.physics(1.0f/60.0f);
+	
 	vkWaitForFences(_device, 1, &_inFlightFences[_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 	vkResetFences(_device, 1, &_inFlightFences[_currentFrame]);
 
@@ -334,8 +337,8 @@ VkResult Renderer::draw(){
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 	UniformBufferObject ubo = {};
 	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), _size[0] / _size[1], 0.1f, 10.0f);
+	ubo.view = _camera.view();//glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.proj = _camera.projection();//glm::perspective(glm::radians(45.0f), _size[0] / _size[1], 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1; // Flip compared to OpenGL.
 	// Send data.
 	void* data;
@@ -658,6 +661,7 @@ int Renderer::resize(const int width, const int height){
 	if(width == _size[0] && height == _size[1]){
 		return 0;
 	}
+	_camera.ratio(float(width)/float(height));
 	vkDeviceWaitIdle(_device);
 	cleanupSwapChain();
 	createSwapchain(width, height);

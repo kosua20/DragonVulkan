@@ -1,10 +1,11 @@
 #pragma once
 #include "VulkanUtilities.hpp"
+#include "input/ControllableCamera.hpp"
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
-
 struct GLFWwindow;
 
 class Renderer
@@ -82,5 +83,7 @@ private:
 	
 	size_t _currentFrame = 0;
 	glm::vec2 _size = glm::vec2(0.0f,0.0f);
+	ControllableCamera _camera;
+	
 };
 
