@@ -68,6 +68,8 @@ public:
 	
 	static void transitionImageLayout(const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, VkImage & image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	
+	static VkImageView createImageView(VkDevice & device, VkImage & image, const VkFormat format);
+	
 private:
 	/// Device validation.
 	static bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);

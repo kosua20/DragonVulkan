@@ -57,6 +57,9 @@ private:
 	
 	VkImage _textureImage;
 	VkDeviceMemory _textureImageMemory;
+	VkImageView _textureImageView;
+	VkSampler _textureSampler;
+	;
 	
 	VkBuffer _vertexBuffer;
 	VkDeviceMemory _vertexBufferMemory;

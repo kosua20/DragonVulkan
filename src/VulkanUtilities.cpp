@@ -111,11 +111,13 @@ bool VulkanUtilities::isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR as
 	bool extensionsSupported = checkDeviceExtensionSupport(adevice);
 	bool isComplete = VulkanUtilities::getGraphicsQueueFamilyIndex(adevice, asurface).isComplete();
 	bool swapChainAdequate = false;
+	VkPhysicalDeviceFeatures supportedFeatures;
+	vkGetPhysicalDeviceFeatures(adevice, &supportedFeatures);
 	if(extensionsSupported) {
 		SwapchainSupportDetails swapChainSupport = VulkanUtilities::querySwapchainSupport(adevice, asurface);
 		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 	}
-	return extensionsSupported && isComplete && swapChainAdequate;
+	return extensionsSupported && isComplete && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
 
@@ -578,5 +580,24 @@ void VulkanUtilities::transitionImageLayout(const VkDevice & device, const VkCom
 	vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr,  0, nullptr,  1, &barrier );
 	
 	endOneShotCommandBuffer(commandBuffer, device, commandPool, queue);
+}
+
+VkImageView VulkanUtilities::createImageView(VkDevice & device, VkImage & image, const VkFormat format) {
+	VkImageViewCreateInfo viewInfo = {};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = format;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+	
+	VkImageView imageView;
+	if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+		std::cerr << "Unable to create image view." << std::endl;
+	}
+	return imageView;
 }
 
