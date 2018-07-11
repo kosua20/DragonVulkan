@@ -2,9 +2,7 @@
 #include "VulkanUtilities.hpp"
 #include "input/ControllableCamera.hpp"
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "common.hpp"
 #include <chrono>
 struct GLFWwindow;
 
@@ -26,14 +24,14 @@ public:
 
 protected:
 	
-	int createSwapchain(const int width, const int height);
-	
 	int fillSwapchain(VkRenderPass & renderPass);
 	int createMainRenderpass();
 	int createPipeline();
 	int generateCommandBuffers();
 	
 	void cleanupSwapChain();
+	
+	void createDepthBuffer();
 	
 private:
 	
@@ -76,6 +74,10 @@ private:
 	std::vector<VkImage> _swapchainImages;
 	std::vector<VkImageView> _swapchainImageViews;
 	std::vector<VkFramebuffer> _swapchainFramebuffers;
+	
+	VkImage _depthImage;
+	VkDeviceMemory _depthImageMemory;
+	VkImageView _depthImageView;
 	
 	std::vector<VkSemaphore> _imageAvailableSemaphores;
 	std::vector<VkSemaphore> _renderFinishedSemaphores;

@@ -68,12 +68,17 @@ public:
 	
 	static void transitionImageLayout(const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, VkImage & image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	
-	static VkImageView createImageView(VkDevice & device, VkImage & image, const VkFormat format);
+	static VkImageView createImageView(VkDevice & device, VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags);
+	
+	static VkFormat findDepthFormat(const VkPhysicalDevice & physicalDevice);
+	
+	static bool hasStencilComponent(VkFormat format);
 	
 private:
 	/// Device validation.
 	static bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);
 	static uint32_t findMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags & properties, const VkPhysicalDevice & physicalDevice);
+	static VkFormat findSupportedFormat(const VkPhysicalDevice & physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 	
 	static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 	static std::vector<const char*> getRequiredInstanceExtensions(const bool enableValidationLayers);
