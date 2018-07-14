@@ -260,4 +260,5 @@ paket-files/
 __pycache__/
 *.pyc
 
-xcuserdata/
+*/xcuserdata/
+DragonVulkan.xcodeproj/project.xcworkspace/xcuserdata/simon.xcuserdatad/UserInterfaceState.xcuserstate
