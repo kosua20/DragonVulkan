@@ -179,12 +179,13 @@ VkPresentModeKHR VulkanUtilities::chooseSwapPresentMode(const std::vector<VkPres
 	for(const auto& availablePresentMode : availablePresentModes) {
 		if(availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 			// If available, we directly pick triple buffering.
+			std::cout << "Mailbox mode." << std::endl;
 			return availablePresentMode;
 		} else if(availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
 			bestMode = availablePresentMode;
 		}
 	}
-
+	std::cout << (bestMode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "Immediate" : "FIFO") << " mode." << std::endl;
 	return bestMode;
 }
 
@@ -195,6 +196,7 @@ VulkanUtilities::SwapchainParameters VulkanUtilities::generateSwapchainParameter
 	parameters.surface = VulkanUtilities::chooseSwapSurfaceFormat(parameters.support.formats);
 	parameters.mode = VulkanUtilities::chooseSwapPresentMode(parameters.support.presentModes);
 	// Set the number of images in the chain.
+	std::cout << "Swapchain can have between " << parameters.support.capabilities.minImageCount << " & " << parameters.support.capabilities.maxImageCount << "." << std::endl;
 	parameters.count = parameters.support.capabilities.minImageCount + 1;
 	return parameters;
 }

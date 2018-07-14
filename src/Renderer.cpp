@@ -4,43 +4,10 @@
 #include <iostream>
 #include <array>
 
+// TODO set to proper value based on mode and swapchain count.
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-struct Vertex {
-	glm::vec3 pos;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-	
-	// Binding location, rate of input.
-	static VkVertexInputBindingDescription getBindingDescription() {
-		VkVertexInputBindingDescription bindingDescription = {};
-		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Vertex);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		return bindingDescription;
-	}
-	// Attribute layout.
-	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
-		// Position
-		attributeDescriptions[0].binding = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
-		// Color
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
-		// UVs
-		attributeDescriptions[2].binding = 0;
-		attributeDescriptions[2].location = 2;
-		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-		return attributeDescriptions;
-	}
-	
-};
+
 
 struct UniformBufferObject {
 	glm::mat4 model;
@@ -48,7 +15,7 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-
+/*
 const std::vector<Vertex> vertices = {
 	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
@@ -65,12 +32,13 @@ const std::vector<uint16_t> indices = {
 	0, 1, 2, 2, 3, 0,
 	4, 5, 6, 6, 7, 4
 };
+ */
 
 Renderer::Renderer(VkInstance & anInstance, VkSurfaceKHR & aSurface)
 {
 	_instance = anInstance;
 	_surface = aSurface;
-
+	_objects.emplace_back("cubemap");
 }
 
 
@@ -194,41 +162,12 @@ int Renderer::init(const int width, const int height){
 		std::cerr << "Unable to create a sampler." << std::endl;
 	}
 	
-	/// Vertex buffer.
-	// TODO: bundle all of this away.
-	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-	// Use a staging buffer as an intermediate.
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingBufferMemory;
-	VulkanUtilities::createBuffer(_physicalDevice, _device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-	// Fill it.
-	void* data;
-	vkMapMemory(_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, vertices.data(), (size_t) bufferSize);
-	vkUnmapMemory(_device, stagingBufferMemory);
-	// Create the destination buffer.
-	VulkanUtilities::createBuffer(_physicalDevice, _device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _vertexBuffer, _vertexBufferMemory);
-	// Copy from the staging buffer to the final.
-	// TODO: use specific command pool.
-	VulkanUtilities::copyBuffer(stagingBuffer, _vertexBuffer, bufferSize, _device, _commandPool, _graphicsQueue);
-	vkDestroyBuffer(_device, stagingBuffer, nullptr);
-	vkFreeMemory(_device, stagingBufferMemory, nullptr);
-	
-	/// Index buffer.
-	bufferSize = sizeof(indices[0]) * indices.size();
-	// Create and fill the staging buffer.
-	VulkanUtilities::createBuffer(_physicalDevice, _device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
-	vkMapMemory(_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, indices.data(), (size_t) bufferSize);
-	vkUnmapMemory(_device, stagingBufferMemory);
-	// Create and copy final buffer.
-	VulkanUtilities::createBuffer(_physicalDevice, _device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer, _indexBufferMemory);
-	VulkanUtilities::copyBuffer(stagingBuffer, _indexBuffer, bufferSize, _device, _commandPool, _graphicsQueue);
-	vkDestroyBuffer(_device, stagingBuffer, nullptr);
-	vkFreeMemory(_device, stagingBufferMemory, nullptr);
+	for(auto & object : _objects){
+		object.upload(_physicalDevice, _device, _commandPool, _graphicsQueue);
+	}
 	
 	/// Uniform buffers.
-	bufferSize = sizeof(UniformBufferObject);
+	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 	_uniformBuffers.resize(_swapchainImages.size());
 	_uniformBuffersMemory.resize(_swapchainImages.size());
 	for (size_t i = 0; i < _swapchainImages.size(); i++) {
@@ -323,11 +262,14 @@ VkResult Renderer::draw(){
 	_camera.update();
 	_camera.physics(1.0f/60.0f);
 	
+	
+	// Wait for the current commands buffer to be done.
 	vkWaitForFences(_device, 1, &_inFlightFences[_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 	vkResetFences(_device, 1, &_inFlightFences[_currentFrame]);
 
 	// Acquire image from swap chain.
 	uint32_t imageIndex;
+	// Use a semaphore to know when the image is available.
 	VkResult result = vkAcquireNextImageKHR(_device, _swapchain, std::numeric_limits<uint64_t>::max(), _imageAvailableSemaphores[_currentFrame], VK_NULL_HANDLE, &imageIndex);
 	if(result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 		return result;
@@ -338,7 +280,7 @@ VkResult Renderer::draw(){
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 	UniformBufferObject ubo = {};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::mat4(1.0f);//glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.view = _camera.view();//glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.proj = _camera.projection();//glm::perspective(glm::radians(45.0f), _size[0] / _size[1], 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1; // Flip compared to OpenGL.
@@ -351,6 +293,7 @@ VkResult Renderer::draw(){
 	// Submit command buffer.
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	// Wait for the image to be available before writing to it.
 	VkSemaphore waitSemaphores[] = { _imageAvailableSemaphores[_currentFrame] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
@@ -358,9 +301,11 @@ VkResult Renderer::draw(){
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &_commandBuffers[imageIndex];
+	// Semaphore for when the command buffer is done, so that we can present the image.
 	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[_currentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
+	// Add the fence so that we don't reuse the command buffer while it's in use.
 	if(vkQueueSubmit(_graphicsQueue, 1, &submitInfo, _inFlightFences[_currentFrame]) != VK_SUCCESS) {
 		std::cerr << "Unable to submit commands." << std::endl;
 	}
@@ -368,6 +313,7 @@ VkResult Renderer::draw(){
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
+	// Check for the command buffer to be done.
 	presentInfo.pWaitSemaphores = signalSemaphores;
 	VkSwapchainKHR swapChains[] = { _swapchain };
 	presentInfo.swapchainCount = 1;
@@ -396,6 +342,7 @@ int Renderer::fillSwapchain(VkRenderPass & renderPass){
 	// Retrieve images in the swap chain.
 	vkGetSwapchainImagesKHR(_device, _swapchain, &_swapchainParams.count, nullptr);
 	_swapchainImages.resize(_swapchainParams.count);
+	std::cout << "Images: " << _swapchainParams.count << std::endl;
 	vkGetSwapchainImagesKHR(_device, _swapchain, &_swapchainParams.count, _swapchainImages.data());
 	// Create views for each image.
 	_swapchainImageViews.resize(_swapchainImages.size());
@@ -548,7 +495,7 @@ int Renderer::createPipeline(){
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
 	rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
 	rasterizer.lineWidth = 1.0f;
-	rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizer.cullMode = VK_CULL_MODE_NONE;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
 	// Multisampling (none).
@@ -658,13 +605,15 @@ int Renderer::generateCommandBuffers(){
 		vkCmdBeginRenderPass(_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 		// Bind and draw.
 		vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
-		VkBuffer vertexBuffers[] = {_vertexBuffer};
-		VkDeviceSize offsets[] = {0};
-		vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(_commandBuffers[i], _indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-		// Uniform descriptor sets.
-		vkCmdBindDescriptorSets(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
-		vkCmdDrawIndexed(_commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		for(auto & object : _objects){
+			VkBuffer vertexBuffers[] = {object._vertexBuffer};
+			VkDeviceSize offsets[] = {0};
+			vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(_commandBuffers[i], object._indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+			// Uniform descriptor sets.
+			vkCmdBindDescriptorSets(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
+			vkCmdDrawIndexed(_commandBuffers[i], object._count, 1, 0, 0, 0);
+		}
 		
 		vkCmdEndRenderPass(_commandBuffers[i]);
 		
@@ -721,10 +670,9 @@ void Renderer::cleanup(){
 		vkFreeMemory(_device, _uniformBuffersMemory[i], nullptr);
 	}
 	
-	vkDestroyBuffer(_device, _vertexBuffer, nullptr);
-	vkFreeMemory(_device, _vertexBufferMemory, nullptr);
-	vkDestroyBuffer(_device, _indexBuffer, nullptr);
-	vkFreeMemory(_device, _indexBufferMemory, nullptr);
+	for(auto & object : _objects){
+		object.clean(_device);
+	}
 	
 	for(size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vkDestroySemaphore(_device, _renderFinishedSemaphores[i], nullptr);

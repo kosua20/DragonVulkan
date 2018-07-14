@@ -15,9 +15,7 @@ void MeshUtilities::loadObj(const std::string & path, Mesh & mesh, MeshUtilities
 	
 	//Init the mesh.
 	mesh.indices.clear();
-	mesh.positions.clear();
-	mesh.normals.clear();
-	mesh.texcoords.clear();
+	mesh.vertices.clear();
 	// Init temporary vectors.
 	vector<glm::vec3> positions_temp;
 	vector<glm::vec3> normals_temp;
@@ -96,13 +94,15 @@ void MeshUtilities::loadObj(const std::string & path, Mesh & mesh, MeshUtilities
 	if (mode == MeshUtilities::Points){
 		// Mode: Points
 		// In this mode, we don't care about faces. We simply associate each vertex/normal/uv in the same order.
-		
-		mesh.positions = positions_temp;
-		if(hasNormals){
-			mesh.normals = normals_temp;
-		}
-		if(hasUV){
-			mesh.texcoords = texcoords_temp;
+		mesh.vertices.resize(positions_temp.size());
+		for(size_t vid = 0; vid < positions_temp.size(); ++vid){
+			mesh.vertices[vid].pos = positions_temp[vid];
+			if(hasNormals){
+				mesh.vertices[vid].normal = normals_temp[vid];
+			}
+			if(hasUV){
+				mesh.vertices[vid].texCoord = texcoords_temp[vid];
+			}
 		}
 
 	} else if(mode == MeshUtilities::Expanded){
@@ -117,18 +117,19 @@ void MeshUtilities::loadObj(const std::string & path, Mesh & mesh, MeshUtilities
 			
 			// Positions (we are sure they exist).
 			long ind1 = stol(str.substr(0,foundF))-1;
-			mesh.positions.push_back(positions_temp[ind1]);
+			mesh.vertices.emplace_back();
+			mesh.vertices.back().pos = positions_temp[ind1];
 
 			// UVs (second index).
 			if(hasUV){
 				long ind2 = stol(str.substr(foundF+1,foundL))-1;
-				mesh.texcoords.push_back(texcoords_temp[ind2]);
+				mesh.vertices.back().texCoord = texcoords_temp[ind2];
 			}
 
 			// Normals (third index, in all cases).
 			if(hasNormals){
 				long ind3 = stol(str.substr(foundL+1))-1;
-				mesh.normals.push_back(normals_temp[ind3]);
+				mesh.vertices.back().normal = normals_temp[ind3];
 			}
 			
 			//Indices (simply a vector of increasing integers).
@@ -162,17 +163,18 @@ void MeshUtilities::loadObj(const std::string & path, Mesh & mesh, MeshUtilities
 			
 			//Positions (we are sure they exist)
 			unsigned int ind1 = stoi(str.substr(0,foundF))-1;
-			mesh.positions.push_back(positions_temp[ind1]);
+			mesh.vertices.emplace_back();
+			mesh.vertices.back().pos = positions_temp[ind1];
 
 			//UVs (second index)
 			if(hasUV){
 				unsigned int ind2 = stoi(str.substr(foundF+1,foundL))-1;
-				mesh.texcoords.push_back(texcoords_temp[ind2]);
+				mesh.vertices.back().texCoord = texcoords_temp[ind2];
 			}
 			//Normals (third index, in all cases)
 			if(hasNormals){
 				unsigned int ind3 = stoi(str.substr(foundL+1))-1;
-				mesh.normals.push_back(normals_temp[ind3]);
+				mesh.vertices.back().normal = normals_temp[ind3];
 			}
 
 			mesh.indices.push_back(maxInd);
@@ -186,57 +188,58 @@ void MeshUtilities::loadObj(const std::string & path, Mesh & mesh, MeshUtilities
 	normals_temp.clear();
 	texcoords_temp.clear();
 	faces_temp.clear();
-	std::cout << "Mesh loaded with " << mesh.indices.size()/3 << " faces, " << mesh.positions.size() << " vertices, " << mesh.normals.size() << " normals, " << mesh.texcoords.size() << " texcoords." << std::endl;
+	std::cout << "Mesh loaded with " << mesh.indices.size()/3 << " faces, " << mesh.vertices.size() << " vertices." << std::endl;
+	
 	
 }
 
 void MeshUtilities::centerAndUnitMesh(Mesh & mesh){
 	// Compute the centroid.
 	glm::vec3 centroid = glm::vec3(0.0);
-	float maxi = mesh.positions[0].x;
-	for(size_t i = 0; i < mesh.positions.size(); i++){
-		centroid += mesh.positions[i];
+	float maxi = mesh.vertices[0].pos.x;
+	for(size_t i = 0; i < mesh.vertices.size(); i++){
+		centroid += mesh.vertices[i].pos;
 	}
-	centroid /= mesh.positions.size();
+	centroid /= mesh.vertices.size();
 
-	for(size_t i = 0; i < mesh.positions.size(); i++){
+	for(size_t i = 0; i < mesh.vertices.size(); i++){
 		// Translate  the vertex.
-		mesh.positions[i] -= centroid;
+		mesh.vertices[i].pos -= centroid;
 		// Find the maximal distance from a vertex to the center.
-		maxi = abs(mesh.positions[i].x) > maxi ? abs(mesh.positions[i].x) : maxi;
-		maxi = abs(mesh.positions[i].y) > maxi ? abs(mesh.positions[i].y) : maxi;
-		maxi = abs(mesh.positions[i].z) > maxi ? abs(mesh.positions[i].z) : maxi;
+		maxi = abs(mesh.vertices[i].pos.x) > maxi ? abs(mesh.vertices[i].pos.x) : maxi;
+		maxi = abs(mesh.vertices[i].pos.y) > maxi ? abs(mesh.vertices[i].pos.y) : maxi;
+		maxi = abs(mesh.vertices[i].pos.z) > maxi ? abs(mesh.vertices[i].pos.z) : maxi;
 	}
 	maxi = maxi == 0.0f ? 1.0f : maxi;
 	
 	// Scale the mesh.
-	for(size_t i = 0; i < mesh.positions.size(); i++){
-		mesh.positions[i] /= maxi;
+	for(size_t i = 0; i < mesh.vertices.size(); i++){
+		mesh.vertices[i].pos /= maxi;
 	}
 
 }
 
 void MeshUtilities::computeTangentsAndBinormals(Mesh & mesh){
-	if(mesh.indices.size() * mesh.positions.size() * mesh.texcoords.size() == 0){
+	if(mesh.indices.size() * mesh.vertices.size() == 0){
 		// Missing data, or not the right mode (Points).
 		return;
 	}
 	// Start by filling everything with 0 (as we want to accumulate tangents and binormals coming from different faces for each vertex).
-	for(size_t pid = 0; pid < mesh.positions.size(); ++pid){
-		mesh.tangents.push_back(glm::vec3(0.0f));
-		mesh.binormals.push_back(glm::vec3(0.0f));
+	for(size_t pid = 0; pid < mesh.vertices.size(); ++pid){
+		mesh.vertices[pid].tangent = glm::vec3(0.0f);
+		mesh.vertices[pid].binormal = glm::vec3(0.0f);
 	}
 	// Then, compute both vectors for each face and accumulate them.
 	for(size_t fid = 0; fid < mesh.indices.size(); fid += 3){
 
 		// Get the vertices of the face.
-		glm::vec3 & v0 = mesh.positions[mesh.indices[fid]];
-		glm::vec3 & v1 = mesh.positions[mesh.indices[fid+1]];
-		glm::vec3 & v2 = mesh.positions[mesh.indices[fid+2]];
+		glm::vec3 & v0 = mesh.vertices[mesh.indices[fid]].pos;
+		glm::vec3 & v1 = mesh.vertices[mesh.indices[fid+1]].pos;
+		glm::vec3 & v2 = mesh.vertices[mesh.indices[fid+2]].pos;
 		// Get the uvs of the face.
-		glm::vec2 & uv0 = mesh.texcoords[mesh.indices[fid]];
-		glm::vec2 & uv1 = mesh.texcoords[mesh.indices[fid+1]];
-		glm::vec2 & uv2 = mesh.texcoords[mesh.indices[fid+2]];
+		glm::vec2 & uv0 = mesh.vertices[mesh.indices[fid]].texCoord;
+		glm::vec2 & uv1 = mesh.vertices[mesh.indices[fid+1]].texCoord;
+		glm::vec2 & uv2 = mesh.vertices[mesh.indices[fid+2]].texCoord;
 
 		// Delta positions and uvs.
 		glm::vec3 deltaPosition1 = v1 - v0;
@@ -250,21 +253,21 @@ void MeshUtilities::computeTangentsAndBinormals(Mesh & mesh){
     	glm::vec3 binormal = det * (deltaPosition2 * deltaUv1.x   - deltaPosition1 * deltaUv2.x);
 
     	// Accumulate them. We don't normalize to get a free weighting based on the size of the face.
-    	mesh.tangents[mesh.indices[fid]] += tangent;
-    	mesh.tangents[mesh.indices[fid+1]] += tangent;
-    	mesh.tangents[mesh.indices[fid+2]] += tangent;
+    	mesh.vertices[mesh.indices[fid]].tangent += tangent;
+    	mesh.vertices[mesh.indices[fid+1]].tangent += tangent;
+    	mesh.vertices[mesh.indices[fid+2]].tangent += tangent;
 
-    	mesh.binormals[mesh.indices[fid]] += binormal;
-    	mesh.binormals[mesh.indices[fid+1]] += binormal;
-    	mesh.binormals[mesh.indices[fid+2]] += binormal;
+    	mesh.vertices[mesh.indices[fid]].binormal += binormal;
+    	mesh.vertices[mesh.indices[fid+1]].binormal += binormal;
+    	mesh.vertices[mesh.indices[fid+2]].binormal += binormal;
 	}
 	// Finally, enforce orthogonality and good orientation of the basis.
-	for(size_t tid = 0; tid < mesh.tangents.size(); ++tid){
-		mesh.tangents[tid] = normalize(mesh.tangents[tid] - mesh.normals[tid] * dot(mesh.normals[tid], mesh.tangents[tid]));
-		if(dot(cross(mesh.normals[tid], mesh.tangents[tid]), mesh.binormals[tid]) < 0.0f){
-			mesh.tangents[tid] *= -1.0f;
+	for(size_t tid = 0; tid < mesh.vertices.size(); ++tid){
+		mesh.vertices[tid].tangent = normalize(mesh.vertices[tid].tangent - mesh.vertices[tid].normal * dot(mesh.vertices[tid].normal, mesh.vertices[tid].tangent));
+		if(dot(cross(mesh.vertices[tid].normal, mesh.vertices[tid].tangent), mesh.vertices[tid].binormal) < 0.0f){
+			mesh.vertices[tid].tangent *= -1.0f;
  		}
 	}
-	std::cout << "Mesh: " << mesh.tangents.size() << " tangents and binormals computed." << std::endl;
+	std::cout << "Mesh: " << mesh.vertices.size() << " tangents and binormals computed." << std::endl;
 }
 

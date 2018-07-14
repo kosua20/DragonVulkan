@@ -1,4 +1,5 @@
 #pragma once
+#include "Object.hpp"
 #include "VulkanUtilities.hpp"
 #include "input/ControllableCamera.hpp"
 
@@ -58,12 +59,8 @@ private:
 	VkDeviceMemory _textureImageMemory;
 	VkImageView _textureImageView;
 	VkSampler _textureSampler;
-	;
 	
-	VkBuffer _vertexBuffer;
-	VkDeviceMemory _vertexBufferMemory;
-	VkBuffer _indexBuffer;
-	VkDeviceMemory _indexBufferMemory;
+	std::vector<Object> _objects;
 	
 	std::vector<VkBuffer> _uniformBuffers;
 	std::vector<VkDeviceMemory> _uniformBuffersMemory;

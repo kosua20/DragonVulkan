@@ -23,6 +23,7 @@
 		F4BEEB7F20F558D80008A7DB /* Input.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7A20F558D70008A7DB /* Input.cpp */; };
 		F4BEEB8020F558D80008A7DB /* ControllableCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7D20F558D80008A7DB /* ControllableCamera.cpp */; };
 		F4BEEB8120F558D80008A7DB /* Camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7E20F558D80008A7DB /* Camera.cpp */; };
+		F4C316A920FA430D005969E7 /* Object.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4C316A720FA430D005969E7 /* Object.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -70,6 +71,8 @@
 		F4BEEB7C20F558D70008A7DB /* Input.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Input.hpp; sourceTree = "<group>"; };
 		F4BEEB7D20F558D80008A7DB /* ControllableCamera.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ControllableCamera.cpp; sourceTree = "<group>"; };
 		F4BEEB7E20F558D80008A7DB /* Camera.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Camera.cpp; sourceTree = "<group>"; };
+		F4C316A720FA430D005969E7 /* Object.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Object.cpp; sourceTree = "<group>"; };
+		F4C316A820FA430D005969E7 /* Object.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Object.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,6 +111,8 @@
 		F41F137320F3BF32008C2905 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				F4C316A720FA430D005969E7 /* Object.cpp */,
+				F4C316A820FA430D005969E7 /* Object.hpp */,
 				F45AD30B20F3BF6100F75298 /* Renderer.cpp */,
 				F45AD30C20F3BF6100F75298 /* Renderer.hpp */,
 				F45AD30D20F3BF6200F75298 /* VulkanUtilities.cpp */,
@@ -251,6 +256,7 @@
 				F41F137520F3BF32008C2905 /* main.cpp in Sources */,
 				F4BEEB6E20F5544E0008A7DB /* Resources.cpp in Sources */,
 				F4BEEB6D20F5544E0008A7DB /* MeshUtilities.cpp in Sources */,
+				F4C316A920FA430D005969E7 /* Object.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
