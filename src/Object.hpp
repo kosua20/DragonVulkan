@@ -9,7 +9,6 @@
 #ifndef Object_hpp
 #define Object_hpp
 
-#include <string>
 #include "common.hpp"
 #include "resources/MeshUtilities.hpp"
 

@@ -21,8 +21,10 @@ public:
 	
 	VkResult draw();
 	
+	void update(const double deltaTime);
+	
 	int resize(const int width, const int height);
-
+	
 protected:
 	
 	int fillSwapchain(VkRenderPass & renderPass);

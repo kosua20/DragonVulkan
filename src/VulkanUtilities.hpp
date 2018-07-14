@@ -1,8 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-#include <string>
-#include <vector>
+#include "common.hpp"
 #include <set>
 
 class VulkanUtilities {

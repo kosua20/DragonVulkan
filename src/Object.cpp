@@ -23,6 +23,7 @@ void Object::upload(VkPhysicalDevice & physicalDevice, VkDevice & device, VkComm
 	/// Vertex buffer.
 	// TODO: bundle all of this away.
 	VkDeviceSize bufferSize = sizeof(_mesh.vertices[0]) * _mesh.vertices.size();
+	
 	// Use a staging buffer as an intermediate.
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;

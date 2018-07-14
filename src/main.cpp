@@ -1,11 +1,8 @@
 #include "common.hpp"
 
-#include <iostream>
-#include <vector>
 #include <set>
 #include <algorithm>
 #include <fstream>
-#include <string>
 
 #include "Renderer.hpp"
 #include "Input.hpp"
@@ -96,11 +93,18 @@ int main() {
 	glfwSetCursorPosCallback(window,cursor_pos_callback);		// Moving the cursor
 	glfwSetScrollCallback(window,scroll_callback);				// Scrolling
 	
+	double timer = glfwGetTime();
 	
 	/// Main loop.
 	while(!glfwWindowShouldClose(window)){
 		
 		Input::manager().update();
+		// Compute the time elapsed since last frame
+		double currentTime = glfwGetTime();
+		double frameTime = currentTime - timer;
+		timer = currentTime;
+		renderer.update(frameTime);
+		
 		/// Draw frame.
 		const VkResult result = renderer.draw();
 		// Handle resizing.

@@ -1,8 +1,6 @@
 #ifndef MeshUtilities_h
 #define MeshUtilities_h
 
-#include <string>
-#include <vector>
 #include <array>
 #include "common.hpp"
 

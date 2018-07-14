@@ -2,9 +2,7 @@
 #include "resources/Resources.hpp"
 #include "common.hpp"
 
-
 #include <fstream>
-#include <iostream>
 
 
 /// Data.

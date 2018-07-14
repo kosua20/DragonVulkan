@@ -1,7 +1,7 @@
 #include "Renderer.hpp"
 #include "VulkanUtilities.hpp"
 #include "resources/Resources.hpp"
-#include <iostream>
+
 #include <array>
 
 // TODO set to proper value based on mode and swapchain count.
@@ -15,29 +15,14 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-/*
-const std::vector<Vertex> vertices = {
-	{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f,1.0f}},
-	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-	
-	{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f,1.0f}},
-	{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-};
-
-const std::vector<uint16_t> indices = {
-	0, 1, 2, 2, 3, 0,
-	4, 5, 6, 6, 7, 4
-};
- */
 
 Renderer::Renderer(VkInstance & anInstance, VkSurfaceKHR & aSurface)
 {
 	_instance = anInstance;
 	_surface = aSurface;
+	_objects.emplace_back("dragon");
+	_objects.emplace_back("suzanne");
+	_objects.emplace_back("plane");
 	_objects.emplace_back("cubemap");
 }
 
@@ -259,9 +244,6 @@ int Renderer::init(const int width, const int height){
 }
 
 VkResult Renderer::draw(){
-	_camera.update();
-	_camera.physics(1.0f/60.0f);
-	
 	
 	// Wait for the current commands buffer to be done.
 	vkWaitForFences(_device, 1, &_inFlightFences[_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
@@ -609,7 +591,7 @@ int Renderer::generateCommandBuffers(){
 			VkBuffer vertexBuffers[] = {object._vertexBuffer};
 			VkDeviceSize offsets[] = {0};
 			vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(_commandBuffers[i], object._indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+			vkCmdBindIndexBuffer(_commandBuffers[i], object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			// Uniform descriptor sets.
 			vkCmdBindDescriptorSets(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
 			vkCmdDrawIndexed(_commandBuffers[i], object._count, 1, 0, 0, 0);
@@ -701,3 +683,9 @@ void Renderer::cleanupSwapChain() {
 	}
 	vkDestroySwapchainKHR(_device, _swapchain, nullptr);
 }
+
+void Renderer::update(const double deltaTime) { 
+	_camera.update();
+	_camera.physics(deltaTime);
+}
+

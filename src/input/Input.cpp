@@ -1,5 +1,5 @@
 #include "Input.hpp"
-#include <iostream>
+
 /// Singleton.
 Input& Input::manager(){
 	static Input* input = new Input();
