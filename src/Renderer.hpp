@@ -47,6 +47,6 @@ private:
 	
 	glm::vec2 _size = glm::vec2(0.0f,0.0f);
 	ControllableCamera _camera;
-	
+	double _time = 0.0;
 };
 

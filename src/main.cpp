@@ -7,8 +7,8 @@
 #include "Renderer.hpp"
 #include "Input.hpp"
 
-const int WIDTH = 400;
-const int HEIGHT = 300;
+const int WIDTH = 800;
+const int HEIGHT = 600;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;

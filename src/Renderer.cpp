@@ -4,8 +4,7 @@
 
 #include <array>
 
-struct UniformBufferObject {
-	glm::mat4 model;
+struct CameraInfos {
 	glm::mat4 view;
 	glm::mat4 proj;
 };
@@ -22,14 +21,18 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	const uint32_t count = swapchain.count;
 	_device = swapchain.device;
 	 
-	_objects.emplace_back("dragon");
-	_objects.emplace_back("suzanne");
-	_objects.emplace_back("plane");
-	_objects.emplace_back("cubemap");
-
+	_objects.emplace_back("dragon", 64);
+	_objects.back().infos.model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f,0.0f,-0.5f)), glm::vec3(1.2f));
+	_objects.emplace_back("suzanne", 8);
+	_objects.back().infos.model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.5, 0.0, 0.5)), glm::vec3(0.65f));
+	_objects.emplace_back("plane", 32);
+	_objects.back().infos.model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0,-0.8,0.0)), glm::vec3(2.75f));
+	//_objects.emplace_back("cubemap");
+	//skybox.model = matrix_model(scale: 15.0, t: float3(0.0,0.0,0.0))
+	
 	_size = glm::vec2(width, height);
 	
-	// Descriptor layout.
+	// Descriptor layout for standard objects.
 	// Uniform binding.
 	VkDescriptorSetLayoutBinding uboLayoutBinding = {};
 	uboLayoutBinding.binding = 0;// binding in 0.
@@ -58,33 +61,15 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	createPipeline(finalRenderPass);
 	
 	// Create sampler.
-	VkSamplerCreateInfo samplerInfo = {};
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR;
-	samplerInfo.minFilter = VK_FILTER_LINEAR;
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.anisotropyEnable = VK_TRUE;
-	samplerInfo.maxAnisotropy = 16;
-	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-	samplerInfo.unnormalizedCoordinates = VK_FALSE;
-	samplerInfo.compareEnable = VK_FALSE;
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = 0.0f;
-	if (vkCreateSampler(_device, &samplerInfo, nullptr, &_textureSampler) != VK_SUCCESS) {
-		std::cerr << "Unable to create a sampler." << std::endl;
-	}
+	_textureSampler = VulkanUtilities::createSampler(_device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	
 	// Objects setup.
 	for(auto & object : _objects){
 		object.upload(physicalDevice, _device, commandPool, graphicsQueue);
 	}
 	
 	/// Uniform buffers.
-	VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+	VkDeviceSize bufferSize = sizeof(CameraInfos);
 	_uniformBuffers.resize(count);
 	_uniformBuffersMemory.resize(count);
 	for (size_t i = 0; i < count; i++) {
@@ -121,7 +106,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 		VkDescriptorBufferInfo bufferInfo = {};
 		bufferInfo.buffer = _uniformBuffers[i];
 		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
+		bufferInfo.range = sizeof(CameraInfos);
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = _objects[0]._textureImageView;
@@ -244,11 +229,17 @@ void Renderer::createPipeline(const VkRenderPass & finalRenderPass){
 	// Finally, the layout.
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	// Push constant (similar to vertex/fragment bytes in metal, small per-frame buffer (128 bytes min)).
+	const VkPushConstantRange pushConstantRange = {
+		.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+		.offset = 0,    // We pass a single, 32-bit float value;
+		.size = (16+1)*4      // both "offset" and "size" are specified in bytes.
+	};
 	// Uniforms setup.
 	pipelineLayoutInfo.setLayoutCount = 1;
 	pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 1;
+	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	if(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
 		std::cerr << "Unable to create pipeline layout." << std::endl;
 		return;
@@ -286,8 +277,7 @@ void Renderer::encode(VkCommandBuffer & commandBuffer, VkRenderPassBeginInfo & f
 	static auto startTime = std::chrono::high_resolution_clock::now();
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-	UniformBufferObject ubo = {};
-	ubo.model = glm::mat4(1.0f);
+	CameraInfos ubo = {};
 	ubo.view = _camera.view();
 	ubo.proj = _camera.projection();
 	ubo.proj[1][1] *= -1; // Flip compared to OpenGL.
@@ -308,6 +298,7 @@ void Renderer::encode(VkCommandBuffer & commandBuffer, VkRenderPassBeginInfo & f
 		vkCmdBindIndexBuffer(commandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 		// Uniform descriptor sets.
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[index], 0, nullptr);
+		vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos.model);
 		vkCmdDrawIndexed(commandBuffer, object._count, 1, 0, 0, 0);
 	}
 	
@@ -315,8 +306,11 @@ void Renderer::encode(VkCommandBuffer & commandBuffer, VkRenderPassBeginInfo & f
 }
 
 void Renderer::update(const double deltaTime) {
+	_time += deltaTime;
 	_camera.update();
 	_camera.physics(deltaTime);
+	//TODO: don't rely on arbitrary indexing.
+	_objects[1].infos.model = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.5,0.0,0.5)), float(fmod(_time, 2*M_PI)), glm::vec3(0.0f,1.0f,0.0f)) , glm::vec3(0.65));
 }
 
 void Renderer::resize(VkRenderPass & finalRenderPass, const int width, const int height){

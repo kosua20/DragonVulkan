@@ -15,7 +15,7 @@
 class Object {
 public:
 	
-	Object(const std::string & name);
+	Object(const std::string & name, const float shininess);
 	
 	~Object();
 	
@@ -28,8 +28,14 @@ public:
 	uint32_t _count;
 	VkImageView _textureImageView;
 	
+	struct Data {
+		glm::mat4 model;
+		float shininess;
+	} infos;
+	
 private:
-	Mesh _mesh;
+	std::string _name;
+	
 	
 	VkImage _textureImage;
 	

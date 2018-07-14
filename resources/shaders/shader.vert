@@ -7,11 +7,15 @@ layout(location = 2) in vec3 inTangent;
 layout(location = 3) in vec3 inBitangent;
 layout(location = 4) in vec2 inTexCoord;
 
-layout(binding = 0) uniform UniformBufferObject {
-    mat4 model;
+layout(binding = 0) uniform CameraInfos {
     mat4 view;
     mat4 proj;
-} ubo;
+} cam;
+
+layout(push_constant) uniform ModelInfos {
+	mat4 model;
+	float shininess;
+} object;
 
 layout(location = 0) out vec3 fragColor;
 layout(location = 1) out vec2 fragTexCoord;
@@ -21,7 +25,7 @@ out gl_PerVertex {
 };
 
 void main() {
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+    gl_Position = cam.proj * cam.view * object.model * vec4(inPosition, 1.0);
     fragColor = inNormal;
 	fragTexCoord = inTexCoord;
 }

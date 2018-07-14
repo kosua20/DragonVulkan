@@ -6,8 +6,13 @@ layout(location = 1) in vec2 fragTexCoord;
 
 layout(binding = 1) uniform sampler2D texSampler;
 
+layout(push_constant) uniform ModelInfos {
+	mat4 model;
+	float shininess;
+} object;
+
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    outColor = vec4(fragColor*texture(texSampler, fragTexCoord).rgb, 1.0);
+    outColor = vec4((object.shininess/64.0)*texture(texSampler, fragTexCoord).rgb, 1.0);
 }

@@ -144,11 +144,11 @@
 		F46DD13D20F6767D009D6457 /* shaders */ = {
 			isa = PBXGroup;
 			children = (
-				F46DD13E20F6767D009D6457 /* frag.spv */,
 				F46DD13F20F6767D009D6457 /* compile.sh */,
 				F46DD14020F6767D009D6457 /* shader.vert */,
 				F46DD14120F6767D009D6457 /* shader.frag */,
 				F46DD14220F6767D009D6457 /* vert.spv */,
+				F46DD13E20F6767D009D6457 /* frag.spv */,
 				F46DD14320F6767D009D6457 /* compile.bat */,
 			);
 			name = shaders;

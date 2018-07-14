@@ -72,6 +72,8 @@ public:
 	
 	static bool hasStencilComponent(VkFormat format);
 	
+	static VkSampler createSampler(const VkDevice & device, const VkFilter filter, const VkSamplerAddressMode mode);
+	
 private:
 	/// Device validation.
 	static bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);

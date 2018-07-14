@@ -12,18 +12,24 @@
 
 Object::~Object() {  }
 
-Object::Object(const std::string &name) {
-	const std::string meshPath = "resources/meshes/" + name + ".obj";
-	MeshUtilities::loadObj(meshPath, _mesh, MeshUtilities::Indexed);
-//	MeshUtilities::centerAndUnitMesh(_mesh);// TODO temp for debug.
-//	MeshUtilities::computeTangentsAndBinormals(_mesh);
+Object::Object(const std::string &name, const float shininess) {
+	_name = name;
+	infos.model = glm::mat4(1.0f);
+	infos.shininess = shininess;
 }
 
 void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue) {
 	
+	// Mesh.
+	Mesh mesh;
+	const std::string meshPath = "resources/meshes/" + _name + ".obj";
+	MeshUtilities::loadObj(meshPath, mesh, MeshUtilities::Indexed);
+	MeshUtilities::centerAndUnitMesh(mesh);
+	MeshUtilities::computeTangentsAndBinormals(mesh);
+	
 	/// Vertex buffer.
 	// TODO: bundle all of this away.
-	VkDeviceSize bufferSize = sizeof(_mesh.vertices[0]) * _mesh.vertices.size();
+	VkDeviceSize bufferSize = sizeof(mesh.vertices[0]) * mesh.vertices.size();
 	
 	// Use a staging buffer as an intermediate.
 	VkBuffer stagingBuffer;
@@ -32,7 +38,7 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	// Fill it.
 	void* data;
 	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, _mesh.vertices.data(), (size_t) bufferSize);
+	memcpy(data, mesh.vertices.data(), (size_t) bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 	// Create the destination buffer.
 	VulkanUtilities::createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _vertexBuffer, _vertexBufferMemory);
@@ -43,11 +49,11 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	vkFreeMemory(device, stagingBufferMemory, nullptr);
 	
 	/// Index buffer.
-	bufferSize = sizeof(_mesh.indices[0]) * _mesh.indices.size();
+	bufferSize = sizeof(mesh.indices[0]) * mesh.indices.size();
 	// Create and fill the staging buffer.
 	VulkanUtilities::createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 	vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-	memcpy(data, _mesh.indices.data(), (size_t) bufferSize);
+	memcpy(data, mesh.indices.data(), (size_t) bufferSize);
 	vkUnmapMemory(device, stagingBufferMemory);
 	// Create and copy final buffer.
 	VulkanUtilities::createBuffer(physicalDevice, device, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer, _indexBufferMemory);
@@ -55,17 +61,12 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	vkDestroyBuffer(device, stagingBuffer, nullptr);
 	vkFreeMemory(device, stagingBufferMemory, nullptr);
 	
-	_count  = static_cast<uint32_t>(_mesh.indices.size());
-	
-	// Clear the mesh.
-	_mesh.vertices.clear();
-	_mesh.indices.clear();
-	_mesh = {};
+	_count  = static_cast<uint32_t>(mesh.indices.size());
 	
 	/// Texture.
 	unsigned int texWidth, texHeight, texChannels;
 	void* image;
-	int rett = Resources::loadImage("resources/statue.png", texWidth, texHeight, texChannels, &image, false);
+	int rett = Resources::loadImage("resources/textures/" + _name + "_texture_color.png", texWidth, texHeight, texChannels, &image, true);
 	if(rett != 0){ std::cerr << "Error loading image." << std::endl; }
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 	VkBuffer stagingBufferImg;
