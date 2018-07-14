@@ -593,7 +593,7 @@ void VulkanUtilities::transitionImageLayout(const VkDevice & device, const VkCom
 	endOneShotCommandBuffer(commandBuffer, device, commandPool, queue);
 }
 
-VkImageView VulkanUtilities::createImageView(VkDevice & device, VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags) {
+VkImageView VulkanUtilities::createImageView(const VkDevice & device, const VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags) {
 	VkImageViewCreateInfo viewInfo = {};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;

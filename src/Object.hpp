@@ -19,20 +19,23 @@ public:
 	
 	~Object();
 	
-	void upload(VkPhysicalDevice & physicalDevice, VkDevice & device, VkCommandPool & commandPool, VkQueue & graphicsQueue);
+	void upload(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue);
 
 	void clean(VkDevice & device);
 	
 	VkBuffer _vertexBuffer;
 	VkBuffer _indexBuffer;
 	uint32_t _count;
+	VkImageView _textureImageView;
 	
 private:
 	Mesh _mesh;
 	
-	VkDeviceMemory _vertexBufferMemory;
+	VkImage _textureImage;
 	
+	VkDeviceMemory _vertexBufferMemory;
 	VkDeviceMemory _indexBufferMemory;
+	VkDeviceMemory _textureImageMemory;
 };
 
 #endif /* Object_hpp */

@@ -24,6 +24,7 @@
 		F4BEEB8020F558D80008A7DB /* ControllableCamera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7D20F558D80008A7DB /* ControllableCamera.cpp */; };
 		F4BEEB8120F558D80008A7DB /* Camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4BEEB7E20F558D80008A7DB /* Camera.cpp */; };
 		F4C316A920FA430D005969E7 /* Object.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4C316A720FA430D005969E7 /* Object.cpp */; };
+		F4EEA16A20FA751600EE963D /* Swapchain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4EEA16820FA751500EE963D /* Swapchain.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -73,6 +74,8 @@
 		F4BEEB7E20F558D80008A7DB /* Camera.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Camera.cpp; sourceTree = "<group>"; };
 		F4C316A720FA430D005969E7 /* Object.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Object.cpp; sourceTree = "<group>"; };
 		F4C316A820FA430D005969E7 /* Object.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Object.hpp; sourceTree = "<group>"; };
+		F4EEA16820FA751500EE963D /* Swapchain.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Swapchain.cpp; sourceTree = "<group>"; };
+		F4EEA16920FA751600EE963D /* Swapchain.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Swapchain.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,10 +114,12 @@
 		F41F137320F3BF32008C2905 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				F4C316A720FA430D005969E7 /* Object.cpp */,
 				F4C316A820FA430D005969E7 /* Object.hpp */,
-				F45AD30B20F3BF6100F75298 /* Renderer.cpp */,
+				F4C316A720FA430D005969E7 /* Object.cpp */,
+				F4EEA16920FA751600EE963D /* Swapchain.hpp */,
+				F4EEA16820FA751500EE963D /* Swapchain.cpp */,
 				F45AD30C20F3BF6100F75298 /* Renderer.hpp */,
+				F45AD30B20F3BF6100F75298 /* Renderer.cpp */,
 				F45AD30D20F3BF6200F75298 /* VulkanUtilities.cpp */,
 				F45AD30E20F3BF6200F75298 /* VulkanUtilities.hpp */,
 				F41F137420F3BF32008C2905 /* main.cpp */,
@@ -248,6 +253,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F4EEA16A20FA751600EE963D /* Swapchain.cpp in Sources */,
 				F4BEEB7F20F558D80008A7DB /* Input.cpp in Sources */,
 				F45AD30F20F3BF6200F75298 /* Renderer.cpp in Sources */,
 				F45AD31020F3BF6200F75298 /* VulkanUtilities.cpp in Sources */,

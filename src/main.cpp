@@ -80,9 +80,12 @@ int main() {
 		return 2;
 	}
 	
+	/// Create the swapchain.
+	Swapchain swapchain(instance, surface, width, height);
+	VkRenderPassBeginInfo finalPassDescriptor;
+	
 	/// Create the renderer.	
-	Renderer renderer(instance, surface);
-	renderer.init(width, height);
+	Renderer renderer(swapchain, width, height);
 	Input::manager().resizeEvent(width, height);
 	
 	/// Register callbacks.
@@ -106,21 +109,30 @@ int main() {
 		renderer.update(frameTime);
 		
 		/// Draw frame.
-		const VkResult result = renderer.draw();
+		VkResult status = swapchain.begin(finalPassDescriptor);
+		if(status == VK_SUCCESS){
+			// If the init was successful, we can encode our frame and commit it.
+			renderer.encode(swapchain.getCommandBuffer(), finalPassDescriptor, swapchain.currentIndex);
+			status = swapchain.commit();
+		}
 		// Handle resizing.
-		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || Input::manager().resized()){
+		if(status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR || Input::manager().resized()){
 			int width = 0, height = 0;
 			while(width == 0 || height == 0) {
 				glfwGetFramebufferSize(window, &width, &height);
 				glfwWaitEvents();
 			}
 			Input::manager().resizeEvent(width, height);
-			renderer.resize(width, height);
+			swapchain.resize(width, height);
+			renderer.resize(swapchain.finalRenderPass, width, height);
 		}
 	}
 
 	/// Cleanup.
-	renderer.cleanup();
+	vkDeviceWaitIdle(swapchain.device);
+	renderer.clean();
+	swapchain.clean();
+	
 	// Clean up instance and surface.
 	VulkanUtilities::cleanupDebug(instance);
 	vkDestroySurfaceKHR(instance, surface, nullptr);

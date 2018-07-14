@@ -66,7 +66,7 @@ public:
 	
 	static void transitionImageLayout(const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, VkImage & image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 	
-	static VkImageView createImageView(VkDevice & device, VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags);
+	static VkImageView createImageView(const VkDevice & device, const VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags);
 	
 	static VkFormat findDepthFormat(const VkPhysicalDevice & physicalDevice);
 	

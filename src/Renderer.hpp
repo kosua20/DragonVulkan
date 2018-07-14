@@ -1,5 +1,7 @@
 #pragma once
 #include "Object.hpp"
+#include "Swapchain.hpp"
+
 #include "VulkanUtilities.hpp"
 #include "input/ControllableCamera.hpp"
 
@@ -11,55 +13,31 @@ class Renderer
 {
 public:
 
-	Renderer(VkInstance & instance, VkSurfaceKHR & surface);
+	Renderer(Swapchain & swapchain, const int width, const int height);
 
 	~Renderer();
 
-	int init(const int width, const int height);
-	
-	void cleanup();
-	
-	VkResult draw();
+	void encode(VkCommandBuffer & commandBuffer, VkRenderPassBeginInfo & finalRenderPassInfos,  const uint32_t index);
 	
 	void update(const double deltaTime);
 	
-	int resize(const int width, const int height);
+	void resize(VkRenderPass & finalRenderPass, const int width, const int height);
 	
-protected:
-	
-	int fillSwapchain(VkRenderPass & renderPass);
-	int createMainRenderpass();
-	int createPipeline();
-	int generateCommandBuffers();
-	
-	void cleanupSwapChain();
-	
-	void createDepthBuffer();
+	void clean();
 	
 private:
 	
-	VkInstance _instance;
-	VkSurfaceKHR _surface;
-	VkPhysicalDevice _physicalDevice;
+	void createPipeline(const VkRenderPass & finalRenderPass);
+	
 	VkDevice _device;
 	
-	VkPipeline _graphicsPipeline;
 	VkPipelineLayout _pipelineLayout;
-	VkRenderPass _mainRenderPass;
-	
+	VkPipeline _graphicsPipeline;
 	
 	VkDescriptorSetLayout _descriptorSetLayout;
 	VkDescriptorPool _descriptorPool;
 	std::vector<VkDescriptorSet> _descriptorSets;
 	
-	VkQueue _graphicsQueue, _presentQueue;
-	
-	VkCommandPool _commandPool;
-	std::vector<VkCommandBuffer> _commandBuffers;
-	
-	VkImage _textureImage;
-	VkDeviceMemory _textureImageMemory;
-	VkImageView _textureImageView;
 	VkSampler _textureSampler;
 	
 	std::vector<Object> _objects;
@@ -67,22 +45,6 @@ private:
 	std::vector<VkBuffer> _uniformBuffers;
 	std::vector<VkDeviceMemory> _uniformBuffersMemory;
 	
-	VkSwapchainKHR _swapchain;
-	VulkanUtilities::SwapchainParameters _swapchainParams;
-	
-	std::vector<VkImage> _swapchainImages;
-	std::vector<VkImageView> _swapchainImageViews;
-	std::vector<VkFramebuffer> _swapchainFramebuffers;
-	
-	VkImage _depthImage;
-	VkDeviceMemory _depthImageMemory;
-	VkImageView _depthImageView;
-	
-	std::vector<VkSemaphore> _imageAvailableSemaphores;
-	std::vector<VkSemaphore> _renderFinishedSemaphores;
-	std::vector<VkFence> _inFlightFences;
-	
-	size_t _currentFrame = 0;
 	glm::vec2 _size = glm::vec2(0.0f,0.0f);
 	ControllableCamera _camera;
 	
