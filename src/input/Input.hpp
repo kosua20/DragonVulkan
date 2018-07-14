@@ -152,12 +152,16 @@ public:
 	/// Handle resize events.
 	void resizeEvent(int width, int height);
 	
+	void pauseEvent(bool paused);
+	
 	void update();
 	
 	/// Info queries.
 	// Resize.
 	
 	bool resized() { return _resized; };
+	
+	bool paused(){ return _paused; }
 	
 	glm::vec2 size() { return glm::vec2(_width, _height); };
 	
@@ -176,6 +180,7 @@ public:
 	glm::vec2 moved(const Mouse & mouseButton) const;
 	
 	glm::vec2 scroll() const;
+
 	
 private:
 	
@@ -185,7 +190,7 @@ private:
 	unsigned int _width = 1;
 	unsigned int _height = 1;
 	bool _resized = false;
-	
+	bool _paused = false;
 	// Mouse state.
 	struct MouseButton {
 		double x0 = 0.0;

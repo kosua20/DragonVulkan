@@ -38,6 +38,9 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
 }
 
 
+void window_iconify_callback(GLFWwindow* window, int iconified){
+	Input::manager().pauseEvent(iconified);
+}
 
 /// Entry point.
 
@@ -95,12 +98,16 @@ int main() {
 	glfwSetMouseButtonCallback(window,mouse_button_callback);	// Clicking the mouse buttons
 	glfwSetCursorPosCallback(window,cursor_pos_callback);		// Moving the cursor
 	glfwSetScrollCallback(window,scroll_callback);				// Scrolling
+	glfwSetWindowIconifyCallback(window, window_iconify_callback);
 	
 	double timer = glfwGetTime();
 	
 	/// Main loop.
 	while(!glfwWindowShouldClose(window)){
-		
+		if(Input::manager().paused()){
+			glfwWaitEvents();
+			continue;
+		}
 		Input::manager().update();
 		// Compute the time elapsed since last frame
 		double currentTime = glfwGetTime();
