@@ -36,6 +36,7 @@ struct CameraInfos {
 };
 
 struct LightInfos {
+	glm::mat4 mvp;
 	glm::vec3 viewSpaceDir;
 };
 

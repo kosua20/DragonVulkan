@@ -51,6 +51,7 @@
 		F454B7EC20FB5DD100723EE6 /* Skybox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Skybox.cpp; sourceTree = "<group>"; };
 		F454B7EE20FB635000723EE6 /* skybox.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = skybox.frag; sourceTree = "<group>"; };
 		F454B7EF20FB635000723EE6 /* skybox.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = skybox.vert; sourceTree = "<group>"; };
+		F454B7F620FB83A900723EE6 /* shadow.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shadow.vert; sourceTree = "<group>"; };
 		F45AD30B20F3BF6100F75298 /* Renderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Renderer.cpp; sourceTree = "<group>"; };
 		F45AD30C20F3BF6100F75298 /* Renderer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Renderer.hpp; sourceTree = "<group>"; };
 		F45AD30D20F3BF6200F75298 /* VulkanUtilities.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VulkanUtilities.cpp; sourceTree = "<group>"; };
@@ -150,6 +151,7 @@
 			isa = PBXGroup;
 			children = (
 				F46DD13F20F6767D009D6457 /* compile.sh */,
+				F454B7F620FB83A900723EE6 /* shadow.vert */,
 				F46DD14020F6767D009D6457 /* object.vert */,
 				F46DD14120F6767D009D6457 /* object.frag */,
 				F454B7EF20FB635000723EE6 /* skybox.vert */,

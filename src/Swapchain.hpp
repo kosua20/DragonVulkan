@@ -21,13 +21,15 @@ public:
 	
 	VkResult begin(VkRenderPassBeginInfo & infos);
 	
-	VkResult commit();
+	VkResult commit(VkSubmitInfo & submitInfo);
 	
 	void resize(const int width, const int height);
 	
 	void clean();
 	
 	VkCommandBuffer & getCommandBuffer(){ return _commandBuffers[currentIndex]; }
+	
+	VkSemaphore & getSemaphore(){ return _imageAvailableSemaphores[currentIndex]; }
 	
 	
 	VulkanUtilities::SwapchainParameters parameters;

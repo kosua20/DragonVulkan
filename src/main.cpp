@@ -118,9 +118,10 @@ int main() {
 		/// Draw frame.
 		VkResult status = swapchain.begin(finalPassDescriptor);
 		if(status == VK_SUCCESS){
+			VkSubmitInfo submitInfo;
 			// If the init was successful, we can encode our frame and commit it.
-			renderer.encode(swapchain.getCommandBuffer(), finalPassDescriptor, swapchain.currentIndex);
-			status = swapchain.commit();
+			renderer.encode(swapchain.getCommandBuffer(), swapchain.graphicsQueue, swapchain.getSemaphore(), finalPassDescriptor, submitInfo, swapchain.currentIndex);
+			status = swapchain.commit(submitInfo);
 		}
 		// Handle resizing.
 		if(status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR || Input::manager().resized()){

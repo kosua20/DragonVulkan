@@ -46,7 +46,7 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	free(image);
 }
 
-void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants){
+void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const VkDescriptorSetLayout & shadowLayout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants, const VkBuffer & lightConstants, const VkImageView & shadowMap){
 	
 	_descriptorSets.resize(pools.size());
 	
@@ -75,8 +75,11 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		VkDescriptorImageInfo imageNormalInfo = {};
 		imageNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageNormalInfo.imageView = _textureNormalView;
+		VkDescriptorImageInfo imageShadowInfo = {};
+		imageShadowInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageShadowInfo.imageView = shadowMap;
 		
-		std::array<VkWriteDescriptorSet, 4> descriptorWrites = {};
+		std::array<VkWriteDescriptorSet, 5> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet = _descriptorSets[i];
 		descriptorWrites[0].dstBinding = 0;
@@ -109,8 +112,43 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		descriptorWrites[3].descriptorCount = 1;
 		descriptorWrites[3].pBufferInfo = &bufferLightInfo;
 		
+		descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[4].dstSet = _descriptorSets[i];
+		descriptorWrites[4].dstBinding = 4;
+		descriptorWrites[4].dstArrayElement = 0;
+		descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[4].descriptorCount = 1;
+		descriptorWrites[4].pImageInfo = &imageShadowInfo;
+		
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		
+		
 	}
+	
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = pools[0];
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &shadowLayout;
+	
+	if (vkAllocateDescriptorSets(device, &allocInfo, &_shadowDescriptorSet) != VK_SUCCESS) {
+		std::cerr << "Unable to create descriptor sets." << std::endl;
+	}
+	VkDescriptorBufferInfo bufferLightInfo = {};
+	bufferLightInfo.buffer = lightConstants;
+	bufferLightInfo.offset = 0;
+	bufferLightInfo.range = sizeof(LightInfos);
+	std::array<VkWriteDescriptorSet, 1> shadowDescriptorWrites = {};
+	shadowDescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	shadowDescriptorWrites[0].dstSet = _shadowDescriptorSet;
+	shadowDescriptorWrites[0].dstBinding = 0;
+	shadowDescriptorWrites[0].dstArrayElement = 0;
+	shadowDescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	shadowDescriptorWrites[0].descriptorCount = 1;
+	shadowDescriptorWrites[0].pBufferInfo = &bufferLightInfo;
+	
+	vkUpdateDescriptorSets(device, static_cast<uint32_t>(shadowDescriptorWrites.size()), shadowDescriptorWrites.data(), 0, nullptr);
+	
 }
 
 void Object::clean(VkDevice & device){

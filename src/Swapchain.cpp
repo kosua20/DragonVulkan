@@ -231,18 +231,8 @@ VkResult Swapchain::begin(VkRenderPassBeginInfo & infos){
 	return status;
 }
 
-VkResult Swapchain::commit(){
-	if(vkEndCommandBuffer(_commandBuffers[currentIndex]) != VK_SUCCESS) {
-		std::cerr << "Unable to end recording command buffer." << std::endl;
-	}
-	// Submit command buffer.
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	// Wait for the image to be available before writing to it.
-	VkSemaphore waitSemaphores[] = { _imageAvailableSemaphores[_currentFrame] };
+VkResult Swapchain::commit(VkSubmitInfo & submitInfo){
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &_commandBuffers[currentIndex];

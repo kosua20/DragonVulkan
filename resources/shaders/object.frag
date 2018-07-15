@@ -7,8 +7,10 @@ layout(location = 2) in mat3 fragTbn;
 
 layout(binding = 1) uniform sampler2D colorMap;
 layout(binding = 2) uniform sampler2D normalMap;
+layout(binding = 4) uniform sampler2D shadowMap;
 
 layout(binding = 3) uniform LightInfos {
+	mat4 viewproj;
 	vec3 viewSpaceDir;
 } light;
 
@@ -21,7 +23,7 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
 	// Base color.
-	vec3 albedo = texture(colorMap, fragUv).rgb;
+	vec3 albedo = texture(shadowMap, fragUv).rgb;
 	
 	// Compute normal in view space.
 	vec3 n = normalize(2.0 * texture(normalMap, fragUv).rgb - 1.0);
@@ -43,6 +45,6 @@ void main() {
 		float specular = pow(max(dot(r, v), 0.0), object.shininess);
 		color += shadowFactor*specular;
 	}
-	outColor = vec4(color,1.0);
+	outColor = vec4(albedo,1.0);
 	
 }
