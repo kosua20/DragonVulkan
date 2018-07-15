@@ -30,6 +30,9 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	
 	_size = glm::vec2(width, height);
 	
+	// Create sampler.
+	_textureSampler = VulkanUtilities::createSampler(_device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	
 	// Descriptor layout for standard objects.
 	// Uniform binding.
 	VkDescriptorSetLayoutBinding uboLayoutBinding = {};
@@ -48,14 +51,14 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	samplerLayoutBinding.descriptorCount = 1;
 	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
+	samplerLayoutBinding.pImmutableSamplers = &_textureSampler;
 	// Image+sampler binding.
 	VkDescriptorSetLayoutBinding samplerLayoutNormalBinding = {};
 	samplerLayoutNormalBinding.binding = 2;
 	samplerLayoutNormalBinding.descriptorCount = 1;
 	samplerLayoutNormalBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	samplerLayoutNormalBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-	samplerLayoutNormalBinding.pImmutableSamplers = nullptr;
+	samplerLayoutNormalBinding.pImmutableSamplers = &_textureSampler;
 	// Create the layout (== defining a struct)
 	std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboLayoutBinding, uboLayoutLightBinding, samplerLayoutBinding, samplerLayoutNormalBinding};
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
@@ -69,8 +72,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	/// Pipeline.
 	createPipeline(finalRenderPass);
 	
-	// Create sampler.
-	_textureSampler = VulkanUtilities::createSampler(_device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+	
 	
 	// Objects setup.
 	for(auto & object : _objects){
@@ -107,7 +109,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	
 	// Create descriptors sets.
 	for(auto & object : _objects){
-		object.generateDescriptorSets(_device, _descriptorSetLayout, _descriptorPools, _uniformBuffers, _textureSampler);
+		object.generateDescriptorSets(_device, _descriptorSetLayout, _descriptorPools, _uniformBuffers);
 	}
 	
 }

@@ -23,7 +23,7 @@ public:
 
 	void clean(VkDevice & device);
 	
-	void generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants, const VkSampler & sampler);
+	void generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants);
 	
 	const VkDescriptorSet & descriptorSet(const int i){ return _descriptorSets[i]; }
 	

@@ -77,7 +77,7 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	free(image);
 }
 
-void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants, const VkSampler & sampler){
+void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants){
 	
 	_descriptorSets.resize(pools.size());
 	
@@ -103,11 +103,9 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = _textureColorView;
-		imageInfo.sampler = sampler;
 		VkDescriptorImageInfo imageNormalInfo = {};
 		imageNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageNormalInfo.imageView = _textureNormalView;
-		imageNormalInfo.sampler = sampler; // TODO: move to immutable sampler.
 		
 		std::array<VkWriteDescriptorSet, 4> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
