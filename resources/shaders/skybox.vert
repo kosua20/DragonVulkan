@@ -18,13 +18,18 @@ layout(push_constant) uniform ModelInfos {
 } object;
 
 
-layout(location = 0) out vec2 fragUv;
+layout(location = 0) out vec3 fragUv;
 
 out gl_PerVertex {
 	vec4 gl_Position;
 };
 
 void main() {
-	fragUv = inTexCoord;
-	gl_Position = cam.proj * cam.view * object.model * vec4(inPosition, 1.0);
+	fragUv = inPosition;
+	// Remove the translation from the view matrix, so that the skybox stays centered on the viewer.
+	mat4 fixedView = cam.view;
+	fixedView[3] = vec4(0.0,0.0,0.0,1.0);
+	gl_Position = cam.proj * fixedView * object.model * vec4(inPosition, 1.0);
+	// Send the skybox to the back of the scene (see skybox pipeline creation for more details).
+	gl_Position.z = gl_Position.w; 
 }

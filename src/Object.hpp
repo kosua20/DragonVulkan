@@ -31,8 +31,6 @@ public:
 	VkBuffer _vertexBuffer;
 	VkBuffer _indexBuffer;
 	uint32_t _count;
-	VkImageView _textureColorView;
-	VkImageView _textureNormalView;
 	ObjectInfos infos;
 	
 private:
@@ -41,6 +39,8 @@ private:
 	
 	VkImage _textureColorImage;
 	VkImage _textureNormalImage;
+	VkImageView _textureColorView;
+	VkImageView _textureNormalView;
 	
 	VkDeviceMemory _vertexBufferMemory;
 	VkDeviceMemory _indexBufferMemory;

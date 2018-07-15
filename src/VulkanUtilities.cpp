@@ -495,7 +495,7 @@ void VulkanUtilities::copyBuffer(const VkBuffer & srcBuffer, const VkBuffer & ds
 	endOneShotCommandBuffer(commandBuffer, device, commandPool, queue);
 }
 
-int VulkanUtilities::createImage(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const uint32_t & width, const uint32_t & height, const VkFormat & format, const VkImageTiling & tiling, const VkImageUsageFlags & usage, const VkMemoryPropertyFlags & properties, VkImage & image, VkDeviceMemory & imageMemory){
+int VulkanUtilities::createImage(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const uint32_t & width, const uint32_t & height, const VkFormat & format, const VkImageTiling & tiling, const VkImageUsageFlags & usage, const VkMemoryPropertyFlags & properties, const bool cube, VkImage & image, VkDeviceMemory & imageMemory){
 	// Create image.
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -504,14 +504,14 @@ int VulkanUtilities::createImage(const VkPhysicalDevice & physicalDevice, const 
 	imageInfo.extent.height = static_cast<uint32_t>(height);
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
+	imageInfo.arrayLayers = cube ? 6 : 1;
 	imageInfo.format = format;
 	imageInfo.tiling = tiling;
 	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	imageInfo.usage = usage;
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.flags = 0; // Optional
+	imageInfo.flags = cube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
 	if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
 		std::cerr << "Unable to create texture image." << std::endl;
 		return 3;
@@ -531,7 +531,7 @@ int VulkanUtilities::createImage(const VkPhysicalDevice & physicalDevice, const 
 	return 0;
 }
 
-void VulkanUtilities::copyBufferToImage(const VkBuffer & srcBuffer, const VkImage & dstImage, const uint32_t & width, const uint32_t & height, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue){
+void VulkanUtilities::copyBufferToImage(const VkBuffer & srcBuffer, const VkImage & dstImage, const uint32_t & width, const uint32_t & height, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, const bool cube){
 	VkCommandBuffer commandBuffer = beginOneShotCommandBuffer(device, commandPool);
 	// Copy operation.
 	VkBufferImageCopy region = {};
@@ -541,14 +541,14 @@ void VulkanUtilities::copyBufferToImage(const VkBuffer & srcBuffer, const VkImag
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	region.imageSubresource.mipLevel = 0;
 	region.imageSubresource.baseArrayLayer = 0;
-	region.imageSubresource.layerCount = 1;
+	region.imageSubresource.layerCount = cube ? 6 : 1;
 	region.imageOffset = {0, 0, 0};
 	region.imageExtent = { width, height, 1};
 	vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 	endOneShotCommandBuffer(commandBuffer, device, commandPool, queue);
 }
 
-void VulkanUtilities::transitionImageLayout(const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, VkImage & image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void VulkanUtilities::transitionImageLayout(const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, VkImage & image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, const bool cube) {
 	VkCommandBuffer commandBuffer = beginOneShotCommandBuffer(device, commandPool);
 	
 	VkPipelineStageFlags sourceStage;
@@ -564,7 +564,7 @@ void VulkanUtilities::transitionImageLayout(const VkDevice & device, const VkCom
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.layerCount = cube ? 6 : 1;
 	// Aspect mask.
 	if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
 		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -600,17 +600,17 @@ void VulkanUtilities::transitionImageLayout(const VkDevice & device, const VkCom
 	endOneShotCommandBuffer(commandBuffer, device, commandPool, queue);
 }
 
-VkImageView VulkanUtilities::createImageView(const VkDevice & device, const VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags) {
+VkImageView VulkanUtilities::createImageView(const VkDevice & device, const VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags, const bool cube) {
 	VkImageViewCreateInfo viewInfo = {};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = image;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.viewType = cube ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_2D;
 	viewInfo.format = format;
 	viewInfo.subresourceRange.aspectMask = aspectFlags;
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.levelCount = 1;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
+	viewInfo.subresourceRange.layerCount = cube ? 6 : 1;
 	
 	VkImageView imageView;
 	if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
@@ -665,8 +665,8 @@ VkSampler VulkanUtilities::createSampler(const VkDevice & device, const VkFilter
 	}
 	return sampler;
 }
-void VulkanUtilities::createTexture(const void * image, const uint32_t width, const uint32_t height, const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, VkImage & textureImage, VkDeviceMemory & textureMemory, VkImageView & textureView){
-	VkDeviceSize imageSize = width * height * 4;
+void VulkanUtilities::createTexture(const void * image, const uint32_t width, const uint32_t height, const bool cube, const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, VkImage & textureImage, VkDeviceMemory & textureMemory, VkImageView & textureView){
+	VkDeviceSize imageSize = width * height * 4 * (cube ? 6 : 1);
 	VkBuffer stagingBufferImg;
 	VkDeviceMemory stagingBufferMemoryImg;
 	createBuffer(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBufferImg, stagingBufferMemoryImg);
@@ -675,17 +675,17 @@ void VulkanUtilities::createTexture(const void * image, const uint32_t width, co
 	memcpy(dataImg, image, static_cast<size_t>(imageSize));
 	vkUnmapMemory(device, stagingBufferMemoryImg);
 	// Create texture image.
-	createImage(physicalDevice, device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureMemory);
+	createImage(physicalDevice, device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, cube, textureImage, textureMemory);
 	// Prepare the image layout for the transfer (we don't care about what's in it before the copy).
-	transitionImageLayout(device, commandPool, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	transitionImageLayout(device, commandPool, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, cube);
 	// Copy from the buffer to the image.
-	copyBufferToImage(stagingBufferImg, textureImage, width, height, device, commandPool, graphicsQueue);
+	copyBufferToImage(stagingBufferImg, textureImage, width, height, device, commandPool, graphicsQueue, cube);
 	// Optimize the layout of the image for sampling.
-	transitionImageLayout(device, commandPool, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	transitionImageLayout(device, commandPool, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, cube);
 	vkDestroyBuffer(device, stagingBufferImg, nullptr);
 	vkFreeMemory(device, stagingBufferMemoryImg, nullptr);
 	// Create texture view.
-	textureView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+	textureView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, cube);
 }
 
 VkDeviceSize VulkanUtilities::nextOffset(size_t size){
@@ -693,7 +693,6 @@ VkDeviceSize VulkanUtilities::nextOffset(size_t size){
 }
 
 void VulkanUtilities::setupBuffers(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, const Mesh & mesh, VkBuffer & vertexBuffer, VkDeviceMemory & vertexBufferMemory, VkBuffer & indexBuffer, VkDeviceMemory & indexBufferMemory){
-	// TODO: bundle all of this away.
 	VkDeviceSize bufferSize = sizeof(mesh.vertices[0]) * mesh.vertices.size();
 	
 	// Use a staging buffer as an intermediate.

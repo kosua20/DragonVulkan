@@ -31,17 +31,17 @@ public:
 	VkBuffer _vertexBuffer;
 	VkBuffer _indexBuffer;
 	uint32_t _count;
-	VkImageView _textureColorView;
 	ObjectInfos infos;
 	
 private:
 	std::string _name;
 	
-	VkImage _textureColorImage;
+	VkImage _textureCubeImage;
+	VkImageView _textureCubeView;
 	
 	VkDeviceMemory _vertexBufferMemory;
 	VkDeviceMemory _indexBufferMemory;
-	VkDeviceMemory _textureColorMemory;
+	VkDeviceMemory _textureCubeMemory;
 	std::vector<VkDescriptorSet> _descriptorSets;
 };
 

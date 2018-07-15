@@ -152,8 +152,8 @@
 				F46DD13F20F6767D009D6457 /* compile.sh */,
 				F46DD14020F6767D009D6457 /* object.vert */,
 				F46DD14120F6767D009D6457 /* object.frag */,
-				F454B7EE20FB635000723EE6 /* skybox.frag */,
 				F454B7EF20FB635000723EE6 /* skybox.vert */,
+				F454B7EE20FB635000723EE6 /* skybox.frag */,
 				F46DD14320F6767D009D6457 /* compile.bat */,
 			);
 			name = shaders;

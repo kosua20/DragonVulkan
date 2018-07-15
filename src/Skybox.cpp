@@ -34,12 +34,24 @@ void Skybox::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	
 	/// Textures.
 	unsigned int texWidth, texHeight, texChannels;
-	void* image;
-	int rett = Resources::loadImage("resources/textures/" + _name + ".png", texWidth, texHeight, texChannels, &image, true);
-	if(rett != 0){ std::cerr << "Error loading color image." << std::endl; }
-	VulkanUtilities::createTexture(image, texWidth, texHeight, physicalDevice, device, commandPool, graphicsQueue, _textureColorImage, _textureColorMemory, _textureColorView);
-	free(image);
+	char* images[6];
+	const std::vector<std::string> suffixes = {"r", "l", "u", "d", "b", "f"};
+	int rett = 0;
+	for(size_t i = 0; i < 6; ++i){
+		rett = Resources::loadImage("resources/textures/" + _name + "_" + suffixes[i] + ".png", texWidth, texHeight, texChannels, (void**)&images[i], false);
+	}
+	const int layerSize = texWidth*texHeight*texChannels;
+	char* mergedImages = (char*)malloc(6*layerSize);
+	for(size_t i = 0; i < 6; ++i){
+		memcpy(mergedImages + i*layerSize, images[i], layerSize);
+	}
+	VulkanUtilities::createTexture(mergedImages, texWidth, texHeight, true, physicalDevice, device, commandPool, graphicsQueue, _textureCubeImage, _textureCubeMemory, _textureCubeView);
 	
+	// Cleaning.
+	for(size_t i = 0; i < 6; ++i){
+		free(images[i]);
+	}
+	free(mergedImages);
 }
 
 void Skybox::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants){
@@ -63,7 +75,7 @@ void Skybox::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		bufferCameraInfo.range = sizeof(CameraInfos);
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = _textureColorView;
+		imageInfo.imageView = _textureCubeView;
 		
 		std::array<VkWriteDescriptorSet, 2> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -87,9 +99,9 @@ void Skybox::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 }
 
 void Skybox::clean(VkDevice & device){
-	vkDestroyImageView(device, _textureColorView, nullptr);
-	vkDestroyImage(device, _textureColorImage, nullptr);
-	vkFreeMemory(device, _textureColorMemory, nullptr);
+	vkDestroyImageView(device, _textureCubeView, nullptr);
+	vkDestroyImage(device, _textureCubeImage, nullptr);
+	vkFreeMemory(device, _textureCubeMemory, nullptr);
 	
 	vkDestroyBuffer(device, _vertexBuffer, nullptr);
 	vkFreeMemory(device, _vertexBufferMemory, nullptr);
