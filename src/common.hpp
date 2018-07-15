@@ -35,6 +35,10 @@ struct CameraInfos {
 	glm::mat4 proj;
 };
 
+struct LightInfos {
+	glm::vec3 viewSpaceDir;
+};
+
 struct ObjectInfos {
 	glm::mat4 model;
 	float shininess;

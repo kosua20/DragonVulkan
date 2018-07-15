@@ -17,7 +17,8 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	const auto & graphicsQueue = swapchain.graphicsQueue;
 	const uint32_t count = swapchain.count;
 	_device = swapchain.device;
-	 
+	_worldLightDir = glm::normalize(glm::vec4(1.0f,1.0f,1.0f,0.0f));
+	
 	_objects.emplace_back("dragon", 64);
 	_objects.back().infos.model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f,0.0f,-0.5f)), glm::vec3(1.2f));
 	_objects.emplace_back("suzanne", 8);
@@ -36,7 +37,11 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	uboLayoutBinding.descriptorCount = 1;
 	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	uboLayoutBinding.pImmutableSamplers = nullptr;// no texture
+	VkDescriptorSetLayoutBinding uboLayoutLightBinding = {};
+	uboLayoutLightBinding.binding = 3;
+	uboLayoutLightBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutLightBinding.descriptorCount = 1;
+	uboLayoutLightBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	// Image+sampler binding.
 	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
 	samplerLayoutBinding.binding = 1;
@@ -52,7 +57,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	samplerLayoutNormalBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	samplerLayoutNormalBinding.pImmutableSamplers = nullptr;
 	// Create the layout (== defining a struct)
-	std::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, samplerLayoutBinding, samplerLayoutNormalBinding};
+	std::array<VkDescriptorSetLayoutBinding, 4> bindings = {uboLayoutBinding, uboLayoutLightBinding, samplerLayoutBinding, samplerLayoutNormalBinding};
 	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -73,7 +78,8 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	}
 	
 	/// Uniform buffers.
-	VkDeviceSize bufferSize = sizeof(CameraInfos);
+	
+	VkDeviceSize bufferSize = VulkanUtilities::nextOffset(sizeof(CameraInfos)) + sizeof(LightInfos);
 	_uniformBuffers.resize(count);
 	_uniformBuffersMemory.resize(count);
 	for (size_t i = 0; i < count; i++) {
@@ -84,7 +90,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height){
 	const uint32_t objectsCount = static_cast<uint32_t>(_objects.size());
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSizes[0].descriptorCount = objectsCount;
+	poolSizes[0].descriptorCount = objectsCount*2;
 	poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	poolSizes[1].descriptorCount = objectsCount*2;
 	VkDescriptorPoolCreateInfo descPoolInfo = {};
@@ -173,18 +179,14 @@ void Renderer::createPipeline(const VkRenderPass & finalRenderPass){
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisampling.sampleShadingEnable = VK_FALSE;
 	multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	// Depth/stencil (none).
+	// Depth/stencil.
 	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	depthStencil.depthTestEnable = VK_TRUE;
 	depthStencil.depthWriteEnable = VK_TRUE;
 	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
 	depthStencil.depthBoundsTestEnable = VK_FALSE;
-	depthStencil.minDepthBounds = 0.0f; // Default
-	depthStencil.maxDepthBounds = 1.0f; // Default
 	depthStencil.stencilTestEnable = VK_FALSE;
-	depthStencil.front = {}; // Optional
-	depthStencil.back = {}; // Optional
 	
 	// Blending (none).
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
@@ -210,7 +212,7 @@ void Renderer::createPipeline(const VkRenderPass & finalRenderPass){
 	pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 1;
 	pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
-	if(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
+	if(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_objectPipelineLayout) != VK_SUCCESS) {
 		std::cerr << "Unable to create pipeline layout." << std::endl;
 		return;
 	}
@@ -227,12 +229,12 @@ void Renderer::createPipeline(const VkRenderPass & finalRenderPass){
 	pipelineInfo.pDepthStencilState = &depthStencil;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = nullptr; // Optional
-	pipelineInfo.layout = _pipelineLayout;
+	pipelineInfo.layout = _objectPipelineLayout;
 	pipelineInfo.renderPass = finalRenderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 	pipelineInfo.basePipelineIndex = -1; // Optional
-	if(vkCreateGraphicsPipelines(_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_graphicsPipeline) != VK_SUCCESS) {
+	if(vkCreateGraphicsPipelines(_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_objectPipeline) != VK_SUCCESS) {
 		std::cerr << "Unable to create graphics pipeline." << std::endl;
 		
 	}
@@ -251,24 +253,28 @@ void Renderer::encode(VkCommandBuffer & commandBuffer, VkRenderPassBeginInfo & f
 	ubo.view = _camera.view();
 	ubo.proj = _camera.projection();
 	ubo.proj[1][1] *= -1; // Flip compared to OpenGL.
+	LightInfos light = {};
+	light.viewSpaceDir = glm::vec3(glm::normalize(ubo.view * _worldLightDir));
 	// Send data.
+	
 	void* data;
-	vkMapMemory(_device, _uniformBuffersMemory[index], 0, sizeof(ubo), 0, &data);
+	vkMapMemory(_device, _uniformBuffersMemory[index], 0, sizeof(ubo)+sizeof(light), 0, &data);
 	memcpy(data, &ubo, sizeof(ubo));
+	memcpy(static_cast<char*>(data) + VulkanUtilities::nextOffset(sizeof(CameraInfos)), &light, sizeof(light));
 	vkUnmapMemory(_device, _uniformBuffersMemory[index]);
 	
 	// Final pass.
 	vkCmdBeginRenderPass(commandBuffer, &finalRenderPassInfos, VK_SUBPASS_CONTENTS_INLINE);
 	// Bind and draw.
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipeline);
 	for(auto & object : _objects){
 		VkBuffer vertexBuffers[] = {object._vertexBuffer};
 		VkDeviceSize offsets[] = {0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 		// Uniform descriptor sets.
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &object.descriptorSet(index), 0, nullptr);
-		vkCmdPushConstants(commandBuffer, _pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos.model);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipelineLayout, 0, 1, &object.descriptorSet(index), 0, nullptr);
+		vkCmdPushConstants(commandBuffer, _objectPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos.model);
 		vkCmdDrawIndexed(commandBuffer, object._count, 1, 0, 0, 0);
 	}
 	
@@ -290,14 +296,14 @@ void Renderer::resize(VkRenderPass & finalRenderPass, const int width, const int
 	_camera.ratio(float(width)/float(height));
 	_size[0] = width; _size[1] = height;
 	/// Recreate Pipeline.
-	vkDestroyPipeline(_device, _graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
+	vkDestroyPipeline(_device, _objectPipeline, nullptr);
+	vkDestroyPipelineLayout(_device, _objectPipelineLayout, nullptr);
 	createPipeline(finalRenderPass);
 }
 
 void Renderer::clean(){
-	vkDestroyPipeline(_device, _graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
+	vkDestroyPipeline(_device, _objectPipeline, nullptr);
+	vkDestroyPipelineLayout(_device, _objectPipelineLayout, nullptr);
 	vkDestroySampler(_device, _textureSampler, nullptr);
 	for(size_t i = 0; i < _descriptorPools.size(); ++i){
 		vkDestroyDescriptorPool(_device, _descriptorPools[i], nullptr);

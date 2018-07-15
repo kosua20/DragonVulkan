@@ -31,8 +31,8 @@ private:
 	
 	VkDevice _device;
 	
-	VkPipelineLayout _pipelineLayout;
-	VkPipeline _graphicsPipeline;
+	VkPipelineLayout _objectPipelineLayout;
+	VkPipeline _objectPipeline;
 	
 	VkDescriptorSetLayout _descriptorSetLayout;
 	std::vector<VkDescriptorPool> _descriptorPools;
@@ -46,6 +46,7 @@ private:
 	
 	glm::vec2 _size = glm::vec2(0.0f,0.0f);
 	ControllableCamera _camera;
+	glm::vec4 _worldLightDir;
 	double _time = 0.0;
 };
 

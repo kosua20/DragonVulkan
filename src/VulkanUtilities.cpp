@@ -17,6 +17,7 @@ const std::vector<const char*> validationLayers = {
 
 bool VulkanUtilities::layersEnabled;
 VkDebugReportCallbackEXT VulkanUtilities::callback;
+VkDeviceSize VulkanUtilities::uniformOffset;
 
 /// Shader modules handling.
 
@@ -180,7 +181,8 @@ VkPresentModeKHR VulkanUtilities::chooseSwapPresentMode(const std::vector<VkPres
 			std::cout << "Mailbox mode." << std::endl;
 			return availablePresentMode;
 		} else if(availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
-			bestMode = availablePresentMode;
+			// Uncapped framerate.
+			// bestMode = availablePresentMode;
 		}
 	}
 	std::cout << (bestMode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "Immediate" : "FIFO") << " mode." << std::endl;
@@ -328,6 +330,11 @@ int VulkanUtilities::createPhysicalDevice(VkInstance & instance, VkSurfaceKHR & 
 		std::cerr << "No GPU satisifies the requirements." << std::endl;
 		return 3;
 	}
+	
+	VkPhysicalDeviceProperties properties;
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+	uniformOffset = properties.limits.minUniformBufferOffsetAlignment;
+	
 	return 0;
 }
 
@@ -679,5 +686,9 @@ void VulkanUtilities::createTexture(const void * image, const uint32_t width, co
 	vkFreeMemory(device, stagingBufferMemoryImg, nullptr);
 	// Create texture view.
 	textureView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
+VkDeviceSize VulkanUtilities::nextOffset(size_t size){
+	return (size/VulkanUtilities::uniformOffset+1)*VulkanUtilities::uniformOffset;
 }
 

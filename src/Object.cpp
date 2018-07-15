@@ -92,10 +92,14 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 			std::cerr << "Unable to create descriptor sets." << std::endl;
 		}
 		
-		VkDescriptorBufferInfo bufferInfo = {};
-		bufferInfo.buffer = constants[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(CameraInfos);
+		VkDescriptorBufferInfo bufferCameraInfo = {};
+		bufferCameraInfo.buffer = constants[i];
+		bufferCameraInfo.offset = 0;
+		bufferCameraInfo.range = sizeof(CameraInfos);
+		VkDescriptorBufferInfo bufferLightInfo = {};
+		bufferLightInfo.buffer = constants[i];
+		bufferLightInfo.offset = VulkanUtilities::nextOffset(sizeof(CameraInfos));
+		bufferLightInfo.range = sizeof(LightInfos);
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = _textureColorView;
@@ -103,16 +107,16 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		VkDescriptorImageInfo imageNormalInfo = {};
 		imageNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageNormalInfo.imageView = _textureNormalView;
-		imageNormalInfo.sampler = sampler;
+		imageNormalInfo.sampler = sampler; // TODO: move to immutable sampler.
 		
-		std::array<VkWriteDescriptorSet, 3> descriptorWrites = {};
+		std::array<VkWriteDescriptorSet, 4> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet = _descriptorSets[i];
 		descriptorWrites[0].dstBinding = 0;
 		descriptorWrites[0].dstArrayElement = 0;
 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descriptorWrites[0].descriptorCount = 1;
-		descriptorWrites[0].pBufferInfo = &bufferInfo;
+		descriptorWrites[0].pBufferInfo = &bufferCameraInfo;
 		
 		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[1].dstSet = _descriptorSets[i];
@@ -129,6 +133,14 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		descriptorWrites[2].descriptorCount = 1;
 		descriptorWrites[2].pImageInfo = &imageNormalInfo;
+		
+		descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[3].dstSet = _descriptorSets[i];
+		descriptorWrites[3].dstBinding = 3;
+		descriptorWrites[3].dstArrayElement = 0;
+		descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[3].descriptorCount = 1;
+		descriptorWrites[3].pBufferInfo = &bufferLightInfo;
 		
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}

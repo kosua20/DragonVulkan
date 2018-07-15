@@ -8,6 +8,10 @@ layout(location = 2) in mat3 fragTbn;
 layout(binding = 1) uniform sampler2D colorMap;
 layout(binding = 2) uniform sampler2D normalMap;
 
+layout(binding = 3) uniform LightInfos {
+	vec3 viewSpaceDir;
+} light;
+
 layout(push_constant) uniform ModelInfos {
 	mat4 model;
 	float shininess;
@@ -23,7 +27,7 @@ void main() {
 	vec3 n = normalize(2.0 * texture(normalMap, fragUv).rgb - 1.0);
 	n = normalize(fragTbn * n);
 	// Light dir.
-	vec3 l = vec3(normalize(vec3(1.0,1.0,1.0)));
+	vec3 l = vec3(normalize(light.viewSpaceDir));
 	
 	// Phong lighting.
 	// Ambient term.

@@ -76,6 +76,8 @@ public:
 	
 	static void createTexture(const void * image, const uint32_t width, const uint32_t height, const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, VkImage & textureImage, VkDeviceMemory & textureMemory, VkImageView & textureView);
 	
+	static VkDeviceSize nextOffset(size_t size);
+	
 private:
 	/// Device validation.
 	static bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);
@@ -92,5 +94,6 @@ private:
 	
 	static bool layersEnabled;
 	static VkDebugReportCallbackEXT callback;
+	static VkDeviceSize uniformOffset;
 };
 
