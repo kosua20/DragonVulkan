@@ -3,7 +3,8 @@
 
 layout(location = 0) in vec3 fragViewSpacePos;
 layout(location = 1) in vec2 fragUv;
-layout(location = 2) in mat3 fragTbn;
+layout(location = 2) in vec4 fragLightSpacePos;
+layout(location = 3) in mat3 fragTbn;
 
 layout(binding = 1) uniform sampler2D colorMap;
 layout(binding = 2) uniform sampler2D normalMap;
@@ -23,7 +24,7 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
 	// Base color.
-	vec3 albedo = texture(shadowMap, fragUv).rgb;
+	vec3 albedo = texture(colorMap, fragUv).rgb;
 	
 	// Compute normal in view space.
 	vec3 n = normalize(2.0 * texture(normalMap, fragUv).rgb - 1.0);
@@ -31,10 +32,22 @@ void main() {
 	// Light dir.
 	vec3 l = vec3(normalize(light.viewSpaceDir));
 	
+	// Shadowing
+	vec2 shadowUV = fragLightSpacePos.xy / fragLightSpacePos.w ;
+	//shadowUV.y = 1.0 - shadowUV.y;
+	// Read both depths.
+	float lightDepth = texture(shadowMap, shadowUV).r;
+	float currentDepth = fragLightSpacePos.z / fragLightSpacePos.w;
+	// Compare depth.
+	float shadowFactor = 0.2;
+	if(currentDepth - 0.001 < lightDepth){
+		// We are not in shadow is the point is closer than the corresponding point in the shadow map.
+		shadowFactor = 1.0;
+	}
+	
 	// Phong lighting.
 	// Ambient term.
 	vec3 color = 0.1 * albedo;
-	float shadowFactor = 1.0;
 	// Diffuse term.
 	float diffuse = max(0.0, dot(n, l));
 	color += shadowFactor * diffuse * albedo;
@@ -45,6 +58,6 @@ void main() {
 		float specular = pow(max(dot(r, v), 0.0), object.shininess);
 		color += shadowFactor*specular;
 	}
-	outColor = vec4(albedo,1.0);
+	outColor = vec4(color,1.0);
 	
 }

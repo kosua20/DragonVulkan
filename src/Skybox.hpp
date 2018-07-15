@@ -23,7 +23,7 @@ public:
 
 	void clean(VkDevice & device);
 	
-	void generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants);
+	void generateDescriptorSets(const VkDevice & device, const VkDescriptorPool & pool, const std::vector<VkBuffer> & constants, const int count);
 	
 	const VkDescriptorSet & descriptorSet(const int i){ return _descriptorSets[i]; }
 	
@@ -33,7 +33,13 @@ public:
 	uint32_t _count;
 	ObjectInfos infos;
 	
+	static VkDescriptorSetLayout createDescriptorSetLayout(const VkDevice & device, const VkSampler & sampler);
+	static VkDescriptorSetLayout descriptorSetLayout;
+	
 private:
+	
+	
+	
 	std::string _name;
 	
 	VkImage _textureCubeImage;
@@ -43,6 +49,9 @@ private:
 	VkDeviceMemory _indexBufferMemory;
 	VkDeviceMemory _textureCubeMemory;
 	std::vector<VkDescriptorSet> _descriptorSets;
+	
+	
+	
 };
 
 #endif /* Skybox_hpp */

@@ -10,6 +10,8 @@
 #include "VulkanUtilities.hpp"
 #include "resources/Resources.hpp"
 
+VkDescriptorSetLayout Object::descriptorSetLayout = VK_NULL_HANDLE;
+
 Object::~Object() {  }
 
 Object::Object(const std::string &name, const float shininess) {
@@ -46,16 +48,16 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	free(image);
 }
 
-void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const VkDescriptorSetLayout & shadowLayout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants, const VkBuffer & lightConstants, const VkImageView & shadowMap){
+void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & shadowLayout, const VkDescriptorPool & pool, const std::vector<VkBuffer> & constants, const VkBuffer & lightConstants, const VkImageView & shadowMap, int count){
 	
-	_descriptorSets.resize(pools.size());
+	_descriptorSets.resize(count);
 	
 	for (size_t i = 0; i < _descriptorSets.size(); i++) {
 		VkDescriptorSetAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = pools[i];
+		allocInfo.descriptorPool = pool;
 		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = &layout;
+		allocInfo.pSetLayouts = &descriptorSetLayout;
 		
 		if (vkAllocateDescriptorSets(device, &allocInfo, &_descriptorSets[i]) != VK_SUCCESS) {
 			std::cerr << "Unable to create descriptor sets." << std::endl;
@@ -127,7 +129,7 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 	
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = pools[0];
+	allocInfo.descriptorPool = pool;
 	allocInfo.descriptorSetCount = 1;
 	allocInfo.pSetLayouts = &shadowLayout;
 	
@@ -165,4 +167,52 @@ void Object::clean(VkDevice & device){
 	vkFreeMemory(device, _indexBufferMemory, nullptr);
 }
 
+VkDescriptorSetLayout Object::createDescriptorSetLayout(const VkDevice & device, const VkSampler & sampler, const VkSampler & shadowSampler){
+	descriptorSetLayout = {};
+	// Descriptor layout for standard objects.
+	// Uniform binding.
+	VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+	uboLayoutBinding.binding = 0;// binding in 0.
+	uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	
+	// Image+sampler binding.
+	VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	samplerLayoutBinding.pImmutableSamplers = &sampler;
+	// Image+sampler binding.
+	VkDescriptorSetLayoutBinding samplerLayoutNormalBinding = {};
+	samplerLayoutNormalBinding.binding = 2;
+	samplerLayoutNormalBinding.descriptorCount = 1;
+	samplerLayoutNormalBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutNormalBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	samplerLayoutNormalBinding.pImmutableSamplers = &sampler;
+	
+	VkDescriptorSetLayoutBinding uboLayoutLightBinding = {};
+	uboLayoutLightBinding.binding = 3;
+	uboLayoutLightBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboLayoutLightBinding.descriptorCount = 1;
+	uboLayoutLightBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT;
+	
+	VkDescriptorSetLayoutBinding samplerLayoutShadowmapBinding = {};
+	samplerLayoutShadowmapBinding.binding = 4;
+	samplerLayoutShadowmapBinding.descriptorCount = 1;
+	samplerLayoutShadowmapBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutShadowmapBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	samplerLayoutShadowmapBinding.pImmutableSamplers = &shadowSampler;
+	// Create the layout (== defining a struct)
+	std::array<VkDescriptorSetLayoutBinding, 5> bindings = {uboLayoutBinding, uboLayoutLightBinding, samplerLayoutBinding, samplerLayoutNormalBinding, samplerLayoutShadowmapBinding};
+	VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	layoutInfo.pBindings = bindings.data();
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
+		std::cerr << "Unable to create uniform descriptor." << std::endl;
+	}
+	return descriptorSetLayout;
+}
 

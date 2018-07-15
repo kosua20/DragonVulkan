@@ -12,6 +12,11 @@ layout(binding = 0) uniform CameraInfos {
     mat4 proj;
 } cam;
 
+layout(binding = 3) uniform LightInfos {
+	mat4 viewproj;
+	vec3 viewSpaceDir;
+} light;
+
 layout(push_constant) uniform ModelInfos {
 	mat4 model;
 	float shininess;
@@ -19,7 +24,8 @@ layout(push_constant) uniform ModelInfos {
 
 layout(location = 0) out vec3 fragViewSpacePos;
 layout(location = 1) out vec2 fragUv;
-layout(location = 2) out mat3 fragTbn;
+layout(location = 2) out vec4 fragLightSpacePos;
+layout(location = 3) out mat3 fragTbn;
 
 
 out gl_PerVertex {
@@ -38,6 +44,8 @@ void main() {
 	fragViewSpacePos = viewSpacePos.xyz;
 	fragUv = inTexCoord;
 	fragTbn = mat3(T, B, N);
+	
+	fragLightSpacePos = light.viewproj * object.model * vec4(inPosition, 1.0);
 	
 	gl_Position = cam.proj * viewSpacePos;
 	

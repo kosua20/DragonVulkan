@@ -1,6 +1,7 @@
 #pragma once
 #include "Object.hpp"
 #include "Skybox.hpp"
+#include "ShadowPass.hpp"
 #include "Swapchain.hpp"
 
 #include "VulkanUtilities.hpp"
@@ -8,7 +9,7 @@
 
 #include "common.hpp"
 #include <chrono>
-struct GLFWwindow;
+//struct GLFWwindow;
 
 class Renderer
 {
@@ -30,41 +31,19 @@ private:
 	
 	void createPipelines(const VkRenderPass & finalRenderPass);
 	void createObjectsDescriptors();
-	void createObjectsPipeline(const VkRenderPass & finalRenderPass);
-	void createSkyboxDescriptors();
-	void createSkyboxPipeline(const VkRenderPass & finalRenderPass);
-	void createShadowDescriptors();
-	void createShadowPipeline(const VkRenderPass & shadowRenderPass);
 	
-	struct OffscreenPass {
-		glm::vec2 size = glm::vec2(1024.0f, 1024.0f);
-		VkFramebuffer frameBuffer;
-		VkImage depthImage;
-		VkDeviceMemory depthMemory;
-		VkImageView depthView;
-		VkRenderPass renderPass;
-		VkSampler depthSampler;
-		VkDescriptorImageInfo descriptor;
-		VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-		VkSemaphore semaphore = VK_NULL_HANDLE;
-	} _shadowPass;
-	VkPipelineLayout _shadowPipelineLayout;
-	VkPipeline _shadowPipeline;
-	VkDescriptorSetLayout _shadowDescriptorSetLayout;
+	
+	ShadowPass _shadowPass;
 	
 	VkDevice _device;
 	
 	VkPipelineLayout _objectPipelineLayout;
 	VkPipeline _objectPipeline;
-	VkDescriptorSetLayout _objectDescriptorSetLayout;
 	
 	VkPipelineLayout _skyboxPipelineLayout;
 	VkPipeline _skyboxPipeline;
-	VkDescriptorSetLayout _skyboxDescriptorSetLayout;
 	
-	
-	
-	std::vector<VkDescriptorPool> _descriptorPools;
+	VkDescriptorPool _descriptorPool;
 	
 	VkSampler _textureSampler;
 	
@@ -73,6 +52,7 @@ private:
 	
 	std::vector<VkBuffer> _uniformBuffers;
 	std::vector<VkDeviceMemory> _uniformBuffersMemory;
+	
 	VkBuffer _lightUniformBuffer;
 	VkDeviceMemory _lightUniformBufferMemory;
 	

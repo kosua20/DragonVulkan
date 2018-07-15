@@ -12,15 +12,15 @@ layout(binding = 0) uniform LightInfos {
 	vec3 viewSpaceDir;
 } light;
 
-layout(push_constant) uniform ModelInfos {
+/*layout(push_constant) uniform ModelInfos {
 	mat4 model;
 	float shininess;
-} object;
+} object;*/
 
 out gl_PerVertex {
 	vec4 gl_Position;
 };
 
 void main() {
-	gl_Position = light.viewproj * object.model * vec4(inPosition, 1.0);
+	gl_Position = light.viewproj * vec4(inPosition, 1.0);
 }

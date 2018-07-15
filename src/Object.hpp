@@ -23,15 +23,18 @@ public:
 
 	void clean(VkDevice & device);
 	
-	void generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const VkDescriptorSetLayout & shadowLayout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants, const VkBuffer & lightConstants, const VkImageView & shadowMap);
+	void generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & shadowLayout, const VkDescriptorPool & pool, const std::vector<VkBuffer> & constants, const VkBuffer & lightConstants, const VkImageView & shadowMap, const int count);
 	
 	const VkDescriptorSet & descriptorSet(const int i){ return _descriptorSets[i]; }
-	const VkDescriptorSet & shadowDescriptorSet(){ return _shadowDescriptorSet; }
+	const VkDescriptorSet & shadowDescriptorSet() const { return _shadowDescriptorSet; }
 	
 	VkBuffer _vertexBuffer;
 	VkBuffer _indexBuffer;
 	uint32_t _count;
 	ObjectInfos infos;
+	
+	static VkDescriptorSetLayout createDescriptorSetLayout(const VkDevice & device, const VkSampler & sampler, const VkSampler & shadowSampler);
+	static VkDescriptorSetLayout descriptorSetLayout;
 	
 private:
 	std::string _name;
