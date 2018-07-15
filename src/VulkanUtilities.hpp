@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.hpp"
+#include "resources/MeshUtilities.hpp"
 #include <set>
 
 class VulkanUtilities {
@@ -78,6 +79,7 @@ public:
 	
 	static VkDeviceSize nextOffset(size_t size);
 	
+	static void setupBuffers(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, const Mesh & mesh, VkBuffer & vertexBuffer, VkDeviceMemory & vertexBufferMemory, VkBuffer & indexBuffer, VkDeviceMemory & indexBufferMemory);
 private:
 	/// Device validation.
 	static bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);

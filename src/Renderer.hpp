@@ -1,5 +1,6 @@
 #pragma once
 #include "Object.hpp"
+#include "Skybox.hpp"
 #include "Swapchain.hpp"
 
 #include "VulkanUtilities.hpp"
@@ -27,19 +28,29 @@ public:
 	
 private:
 	
-	void createPipeline(const VkRenderPass & finalRenderPass);
+	void createPipelines(const VkRenderPass & finalRenderPass);
+	void createObjectsDescriptors();
+	void createObjectsPipeline(const VkRenderPass & finalRenderPass);
+	void createSkyboxDescriptors();
+	void createSkyboxPipeline(const VkRenderPass & finalRenderPass);
 	
 	VkDevice _device;
 	
 	VkPipelineLayout _objectPipelineLayout;
 	VkPipeline _objectPipeline;
+	VkDescriptorSetLayout _objectDescriptorSetLayout;
 	
-	VkDescriptorSetLayout _descriptorSetLayout;
+	
+	VkPipelineLayout _skyboxPipelineLayout;
+	VkPipeline _skyboxPipeline;
+	VkDescriptorSetLayout _skyboxDescriptorSetLayout;
+	
 	std::vector<VkDescriptorPool> _descriptorPools;
 	
 	VkSampler _textureSampler;
 	
 	std::vector<Object> _objects;
+	Skybox _skybox;
 	
 	std::vector<VkBuffer> _uniformBuffers;
 	std::vector<VkDeviceMemory> _uniformBuffersMemory;

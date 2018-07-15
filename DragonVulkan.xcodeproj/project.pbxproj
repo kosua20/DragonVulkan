@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		F41F137520F3BF32008C2905 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F41F137420F3BF32008C2905 /* main.cpp */; };
+		F454B7ED20FB5DD100723EE6 /* Skybox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F454B7EC20FB5DD100723EE6 /* Skybox.cpp */; };
 		F45AD30F20F3BF6200F75298 /* Renderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F45AD30B20F3BF6100F75298 /* Renderer.cpp */; };
 		F45AD31020F3BF6200F75298 /* VulkanUtilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F45AD30D20F3BF6200F75298 /* VulkanUtilities.cpp */; };
 		F45AD31920F3C08300F75298 /* libvulkan.1.1.77.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F45AD31720F3C08300F75298 /* libvulkan.1.1.77.dylib */; };
@@ -46,6 +47,10 @@
 /* Begin PBXFileReference section */
 		F41F137120F3BF32008C2905 /* DragonVulkan */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DragonVulkan; sourceTree = BUILT_PRODUCTS_DIR; };
 		F41F137420F3BF32008C2905 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		F454B7EB20FB5DD100723EE6 /* Skybox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Skybox.hpp; sourceTree = "<group>"; };
+		F454B7EC20FB5DD100723EE6 /* Skybox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Skybox.cpp; sourceTree = "<group>"; };
+		F454B7EE20FB635000723EE6 /* skybox.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = skybox.frag; sourceTree = "<group>"; };
+		F454B7EF20FB635000723EE6 /* skybox.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = skybox.vert; sourceTree = "<group>"; };
 		F45AD30B20F3BF6100F75298 /* Renderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Renderer.cpp; sourceTree = "<group>"; };
 		F45AD30C20F3BF6100F75298 /* Renderer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Renderer.hpp; sourceTree = "<group>"; };
 		F45AD30D20F3BF6200F75298 /* VulkanUtilities.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VulkanUtilities.cpp; sourceTree = "<group>"; };
@@ -54,11 +59,9 @@
 		F45AD31820F3C08300F75298 /* libvulkan.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libvulkan.1.dylib; path = ../../VulkanSDK/macOS/lib/libvulkan.1.dylib; sourceTree = "<group>"; };
 		F45AD31D20F3C18800F75298 /* libglfw.3.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.3.dylib; path = "libs/glfw3/mac/lib-mac/libglfw.3.3.dylib"; sourceTree = "<group>"; };
 		F45AD32020F3C25000F75298 /* libglfw.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.dylib; path = "libs/glfw3/mac/lib-mac/libglfw.3.dylib"; sourceTree = "<group>"; };
-		F46DD13E20F6767D009D6457 /* frag.spv */ = {isa = PBXFileReference; lastKnownFileType = file; path = frag.spv; sourceTree = "<group>"; };
 		F46DD13F20F6767D009D6457 /* compile.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = compile.sh; sourceTree = "<group>"; };
-		F46DD14020F6767D009D6457 /* shader.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.vert; sourceTree = "<group>"; };
-		F46DD14120F6767D009D6457 /* shader.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.frag; sourceTree = "<group>"; };
-		F46DD14220F6767D009D6457 /* vert.spv */ = {isa = PBXFileReference; lastKnownFileType = file; path = vert.spv; sourceTree = "<group>"; };
+		F46DD14020F6767D009D6457 /* object.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = object.vert; sourceTree = "<group>"; };
+		F46DD14120F6767D009D6457 /* object.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = object.frag; sourceTree = "<group>"; };
 		F46DD14320F6767D009D6457 /* compile.bat */ = {isa = PBXFileReference; lastKnownFileType = text; path = compile.bat; sourceTree = "<group>"; };
 		F46DD14420F681B3009D6457 /* common.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = common.hpp; sourceTree = "<group>"; };
 		F4BEEB6920F5544C0008A7DB /* Resources.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Resources.hpp; sourceTree = "<group>"; };
@@ -116,6 +119,8 @@
 			children = (
 				F4C316A820FA430D005969E7 /* Object.hpp */,
 				F4C316A720FA430D005969E7 /* Object.cpp */,
+				F454B7EC20FB5DD100723EE6 /* Skybox.cpp */,
+				F454B7EB20FB5DD100723EE6 /* Skybox.hpp */,
 				F4EEA16920FA751600EE963D /* Swapchain.hpp */,
 				F4EEA16820FA751500EE963D /* Swapchain.cpp */,
 				F45AD30C20F3BF6100F75298 /* Renderer.hpp */,
@@ -145,10 +150,10 @@
 			isa = PBXGroup;
 			children = (
 				F46DD13F20F6767D009D6457 /* compile.sh */,
-				F46DD14020F6767D009D6457 /* shader.vert */,
-				F46DD14120F6767D009D6457 /* shader.frag */,
-				F46DD14220F6767D009D6457 /* vert.spv */,
-				F46DD13E20F6767D009D6457 /* frag.spv */,
+				F46DD14020F6767D009D6457 /* object.vert */,
+				F46DD14120F6767D009D6457 /* object.frag */,
+				F454B7EE20FB635000723EE6 /* skybox.frag */,
+				F454B7EF20FB635000723EE6 /* skybox.vert */,
 				F46DD14320F6767D009D6457 /* compile.bat */,
 			);
 			name = shaders;
@@ -258,6 +263,7 @@
 				F45AD30F20F3BF6200F75298 /* Renderer.cpp in Sources */,
 				F45AD31020F3BF6200F75298 /* VulkanUtilities.cpp in Sources */,
 				F4BEEB8020F558D80008A7DB /* ControllableCamera.cpp in Sources */,
+				F454B7ED20FB5DD100723EE6 /* Skybox.cpp in Sources */,
 				F4BEEB8120F558D80008A7DB /* Camera.cpp in Sources */,
 				F41F137520F3BF32008C2905 /* main.cpp in Sources */,
 				F4BEEB6E20F5544E0008A7DB /* Resources.cpp in Sources */,
