@@ -658,4 +658,26 @@ VkSampler VulkanUtilities::createSampler(const VkDevice & device, const VkFilter
 	}
 	return sampler;
 }
+void VulkanUtilities::createTexture(const void * image, const uint32_t width, const uint32_t height, const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, VkImage & textureImage, VkDeviceMemory & textureMemory, VkImageView & textureView){
+	VkDeviceSize imageSize = width * height * 4;
+	VkBuffer stagingBufferImg;
+	VkDeviceMemory stagingBufferMemoryImg;
+	createBuffer(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBufferImg, stagingBufferMemoryImg);
+	void* dataImg;
+	vkMapMemory(device, stagingBufferMemoryImg, 0, imageSize, 0, &dataImg);
+	memcpy(dataImg, image, static_cast<size_t>(imageSize));
+	vkUnmapMemory(device, stagingBufferMemoryImg);
+	// Create texture image.
+	createImage(physicalDevice, device, width, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureMemory);
+	// Prepare the image layout for the transfer (we don't care about what's in it before the copy).
+	transitionImageLayout(device, commandPool, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	// Copy from the buffer to the image.
+	copyBufferToImage(stagingBufferImg, textureImage, width, height, device, commandPool, graphicsQueue);
+	// Optimize the layout of the image for sampling.
+	transitionImageLayout(device, commandPool, graphicsQueue, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	vkDestroyBuffer(device, stagingBufferImg, nullptr);
+	vkFreeMemory(device, stagingBufferMemoryImg, nullptr);
+	// Create texture view.
+	textureView = createImageView(device, textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+}
 

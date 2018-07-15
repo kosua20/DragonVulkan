@@ -17,15 +17,28 @@ layout(push_constant) uniform ModelInfos {
 	float shininess;
 } object;
 
-layout(location = 0) out vec3 fragColor;
-layout(location = 1) out vec2 fragTexCoord;
+layout(location = 0) out vec3 fragViewSpacePos;
+layout(location = 1) out vec2 fragUv;
+layout(location = 2) out mat3 fragTbn;
+
 
 out gl_PerVertex {
 	vec4 gl_Position;
 };
 
 void main() {
-    gl_Position = cam.proj * cam.view * object.model * vec4(inPosition, 1.0);
-    fragColor = inNormal;
-	fragTexCoord = inTexCoord;
+	
+	mat4 modelView = cam.view * object.model;
+	mat3 normalMat = transpose(inverse(mat3(modelView)));
+	vec3 T = normalize(normalMat * inTangent);
+	vec3 B = normalize(normalMat * inBitangent);
+	vec3 N = normalize(normalMat * inNormal);
+	
+	vec4 viewSpacePos = modelView * vec4(inPosition, 1.0);
+	fragViewSpacePos = viewSpacePos.xyz;
+	fragUv = inTexCoord;
+	fragTbn = mat3(T, B, N);
+	
+	gl_Position = cam.proj * viewSpacePos;
+	
 }

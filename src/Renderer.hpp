@@ -35,8 +35,7 @@ private:
 	VkPipeline _graphicsPipeline;
 	
 	VkDescriptorSetLayout _descriptorSetLayout;
-	VkDescriptorPool _descriptorPool;
-	std::vector<VkDescriptorSet> _descriptorSets;
+	std::vector<VkDescriptorPool> _descriptorPools;
 	
 	VkSampler _textureSampler;
 	

@@ -23,25 +23,30 @@ public:
 
 	void clean(VkDevice & device);
 	
+	void generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants, const VkSampler & sampler);
+	
+	const VkDescriptorSet & descriptorSet(const int i){ return _descriptorSets[i]; }
+	
+	
 	VkBuffer _vertexBuffer;
 	VkBuffer _indexBuffer;
 	uint32_t _count;
-	VkImageView _textureImageView;
-	
-	struct Data {
-		glm::mat4 model;
-		float shininess;
-	} infos;
+	VkImageView _textureColorView;
+	VkImageView _textureNormalView;
+	ObjectInfos infos;
 	
 private:
 	std::string _name;
 	
 	
-	VkImage _textureImage;
+	VkImage _textureColorImage;
+	VkImage _textureNormalImage;
 	
 	VkDeviceMemory _vertexBufferMemory;
 	VkDeviceMemory _indexBufferMemory;
-	VkDeviceMemory _textureImageMemory;
+	VkDeviceMemory _textureColorMemory;
+	VkDeviceMemory _textureNormalMemory;
+	std::vector<VkDescriptorSet> _descriptorSets;
 };
 
 #endif /* Object_hpp */

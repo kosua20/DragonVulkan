@@ -74,6 +74,8 @@ public:
 	
 	static VkSampler createSampler(const VkDevice & device, const VkFilter filter, const VkSamplerAddressMode mode);
 	
+	static void createTexture(const void * image, const uint32_t width, const uint32_t height, const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, VkImage & textureImage, VkDeviceMemory & textureMemory, VkImageView & textureView);
+	
 private:
 	/// Device validation.
 	static bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);

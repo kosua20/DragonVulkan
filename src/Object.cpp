@@ -63,38 +63,84 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	
 	_count  = static_cast<uint32_t>(mesh.indices.size());
 	
-	/// Texture.
+	/// Textures.
 	unsigned int texWidth, texHeight, texChannels;
 	void* image;
 	int rett = Resources::loadImage("resources/textures/" + _name + "_texture_color.png", texWidth, texHeight, texChannels, &image, true);
-	if(rett != 0){ std::cerr << "Error loading image." << std::endl; }
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
-	VkBuffer stagingBufferImg;
-	VkDeviceMemory stagingBufferMemoryImg;
-	VulkanUtilities::createBuffer(physicalDevice, device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBufferImg, stagingBufferMemoryImg);
-	void* dataImg;
-	vkMapMemory(device, stagingBufferMemoryImg, 0, imageSize, 0, &dataImg);
-	memcpy(dataImg, image, static_cast<size_t>(imageSize));
-	vkUnmapMemory(device, stagingBufferMemoryImg);
+	if(rett != 0){ std::cerr << "Error loading color image." << std::endl; }
+	VulkanUtilities::createTexture(image, texWidth, texHeight, physicalDevice, device, commandPool, graphicsQueue, _textureColorImage, _textureColorMemory, _textureColorView);
 	free(image);
-	// Create texture image.
-	VulkanUtilities::createImage(physicalDevice, device, texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _textureImage, _textureImageMemory);
-	// Prepare the image layout for the transfer (we don't care about what's in it before the copy).
-	VulkanUtilities::transitionImageLayout(device, commandPool, graphicsQueue, _textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-	// Copy from the buffer to the image.
-	VulkanUtilities::copyBufferToImage(stagingBufferImg, _textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), device, commandPool, graphicsQueue);
-	// Optimize the layout of the image for sampling.
-	VulkanUtilities::transitionImageLayout(device, commandPool, graphicsQueue, _textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	vkDestroyBuffer(device, stagingBufferImg, nullptr);
-	vkFreeMemory(device, stagingBufferMemoryImg, nullptr);
-	// Create texture view.
-	_textureImageView = VulkanUtilities::createImageView(device, _textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+	
+	rett = Resources::loadImage("resources/textures/" + _name + "_texture_normal.png", texWidth, texHeight, texChannels, &image, true);
+	if(rett != 0){ std::cerr << "Error loading normal image." << std::endl; }
+	VulkanUtilities::createTexture(image, texWidth, texHeight, physicalDevice, device, commandPool, graphicsQueue, _textureNormalImage, _textureNormalMemory, _textureNormalView);
+	free(image);
+}
+
+void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & layout, const std::vector<VkDescriptorPool> & pools, const std::vector<VkBuffer> & constants, const VkSampler & sampler){
+	
+	_descriptorSets.resize(pools.size());
+	
+	for (size_t i = 0; i < _descriptorSets.size(); i++) {
+		VkDescriptorSetAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = pools[i];
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &layout;
+		
+		if (vkAllocateDescriptorSets(device, &allocInfo, &_descriptorSets[i]) != VK_SUCCESS) {
+			std::cerr << "Unable to create descriptor sets." << std::endl;
+		}
+		
+		VkDescriptorBufferInfo bufferInfo = {};
+		bufferInfo.buffer = constants[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(CameraInfos);
+		VkDescriptorImageInfo imageInfo = {};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = _textureColorView;
+		imageInfo.sampler = sampler;
+		VkDescriptorImageInfo imageNormalInfo = {};
+		imageNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageNormalInfo.imageView = _textureNormalView;
+		imageNormalInfo.sampler = sampler;
+		
+		std::array<VkWriteDescriptorSet, 3> descriptorWrites = {};
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = _descriptorSets[i];
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].dstArrayElement = 0;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pBufferInfo = &bufferInfo;
+		
+		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet = _descriptorSets[i];
+		descriptorWrites[1].dstBinding = 1;
+		descriptorWrites[1].dstArrayElement = 0;
+		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[1].descriptorCount = 1;
+		descriptorWrites[1].pImageInfo = &imageInfo;
+		
+		descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[2].dstSet = _descriptorSets[i];
+		descriptorWrites[2].dstBinding = 2;
+		descriptorWrites[2].dstArrayElement = 0;
+		descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[2].descriptorCount = 1;
+		descriptorWrites[2].pImageInfo = &imageNormalInfo;
+		
+		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	}
 }
 
 void Object::clean(VkDevice & device){
-	vkDestroyImageView(device, _textureImageView, nullptr);
-	vkDestroyImage(device, _textureImage, nullptr);
-	vkFreeMemory(device, _textureImageMemory, nullptr);
+	vkDestroyImageView(device, _textureColorView, nullptr);
+	vkDestroyImage(device, _textureColorImage, nullptr);
+	vkFreeMemory(device, _textureColorMemory, nullptr);
+	vkDestroyImageView(device, _textureNormalView, nullptr);
+	vkDestroyImage(device, _textureNormalImage, nullptr);
+	vkFreeMemory(device, _textureNormalMemory, nullptr);
 	
 	vkDestroyBuffer(device, _vertexBuffer, nullptr);
 	vkFreeMemory(device, _vertexBufferMemory, nullptr);

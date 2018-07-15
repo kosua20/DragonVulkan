@@ -29,4 +29,15 @@
 #include <vector>
 #include <string>
 
+// Uniforms structs.
+struct CameraInfos {
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
+struct ObjectInfos {
+	glm::mat4 model;
+	float shininess;
+};
+
 #endif /* common_h */
