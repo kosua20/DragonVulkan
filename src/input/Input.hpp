@@ -1,7 +1,7 @@
 #ifndef Input_h
 #define Input_h
 
-#include "common.hpp"
+#include "../common.hpp"
 #include <memory>
 
 class Input {

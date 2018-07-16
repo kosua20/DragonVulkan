@@ -2,7 +2,7 @@
 #define ControllableCamera_h
 
 #include "Camera.hpp"
-#include "common.hpp"
+#include "../common.hpp"
 
 class ControllableCamera : public Camera {
 	

@@ -8,7 +8,7 @@
 #include <string>
 
 #include "Renderer.hpp"
-#include "Input.hpp"
+#include "input/Input.hpp"
 
 const int WIDTH = 400;
 const int HEIGHT = 300;

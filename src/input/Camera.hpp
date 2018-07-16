@@ -1,7 +1,7 @@
 #ifndef Camera_h
 #define Camera_h
 
-#include "common.hpp"
+#include "../common.hpp"
 
 class Camera {
 	

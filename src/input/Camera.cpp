@@ -1,6 +1,6 @@
 #include "Camera.hpp"
 #include "Input.hpp"
-#include "common.hpp"
+#include "../common.hpp"
 #include <stdio.h>
 #include <algorithm>
 #ifdef _WIN32
