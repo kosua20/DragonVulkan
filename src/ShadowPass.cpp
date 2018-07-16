@@ -8,7 +8,7 @@
 
 #include "ShadowPass.hpp"
 #include "VulkanUtilities.hpp"
-#include "MeshUtilities.hpp"
+#include "resources/MeshUtilities.hpp"
 
 ShadowPass::ShadowPass(const int width, const int height){
 	size = glm::vec2(width, height);

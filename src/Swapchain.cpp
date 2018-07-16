@@ -178,7 +178,6 @@ void Swapchain::createMainRenderpass(){
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 	
 	if(vkCreateRenderPass(device, &renderPassInfo, nullptr, &finalRenderPass) != VK_SUCCESS) {
@@ -223,11 +222,6 @@ VkResult Swapchain::begin(VkRenderPassBeginInfo & infos){
 	infos.framebuffer = _swapchainFramebuffers[currentIndex];
 	infos.renderArea.offset = { 0, 0 };
 	infos.renderArea.extent = parameters.extent;
-	std::array<VkClearValue, 2> clearValues = {};
-	clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-	clearValues[1].depthStencil = {1.0f, 0};
-	infos.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	infos.pClearValues = clearValues.data();
 	return status;
 }
 

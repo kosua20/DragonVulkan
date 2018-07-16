@@ -13,7 +13,7 @@ void PipelineUtilities::createPipeline(const VkDevice & device, const std::strin
 	// This is independent from the RTs.
 	/// Shaders.
 	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(device, "resources/shaders/compiled/" + moduleName+ ".vert.spv");
-	VkShaderModule fragShaderModule;
+	VkShaderModule fragShaderModule = {};
 	// Vertex shader module.
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -117,10 +117,10 @@ void PipelineUtilities::createPipeline(const VkDevice & device, const std::strin
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	if(pushSize > 0){
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pushConstantRange = {
-			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-			.offset = 0,    .size = static_cast<uint32_t>(pushSize)
-		};
+		pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = static_cast<uint32_t>(pushSize);
+		
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 	}
 	

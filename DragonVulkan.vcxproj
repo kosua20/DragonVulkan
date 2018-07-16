@@ -135,9 +135,14 @@
     <ClCompile Include="src\input\ControllableCamera.cpp" />
     <ClCompile Include="src\input\Input.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Object.cpp" />
+    <ClCompile Include="src\PipelineUtilities.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\resources\MeshUtilities.cpp" />
     <ClCompile Include="src\resources\Resources.cpp" />
+    <ClCompile Include="src\ShadowPass.cpp" />
+    <ClCompile Include="src\Skybox.cpp" />
+    <ClCompile Include="src\Swapchain.cpp" />
     <ClCompile Include="src\VulkanUtilities.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -145,10 +150,15 @@
     <ClInclude Include="src\input\Camera.hpp" />
     <ClInclude Include="src\input\ControllableCamera.hpp" />
     <ClInclude Include="src\input\Input.hpp" />
+    <ClInclude Include="src\Object.hpp" />
+    <ClInclude Include="src\PipelineUtilities.hpp" />
     <ClInclude Include="src\Renderer.hpp" />
     <ClInclude Include="src\resources\MeshUtilities.hpp" />
     <ClInclude Include="src\resources\Resources.hpp" />
     <ClInclude Include="src\resources\stb_image.h" />
+    <ClInclude Include="src\ShadowPass.hpp" />
+    <ClInclude Include="src\Skybox.hpp" />
+    <ClInclude Include="src\Swapchain.hpp" />
     <ClInclude Include="src\VulkanUtilities.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
