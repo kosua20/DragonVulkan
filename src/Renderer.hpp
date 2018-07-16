@@ -1,91 +1,66 @@
 #pragma once
+#include "Object.hpp"
+#include "Skybox.hpp"
+#include "ShadowPass.hpp"
+#include "Swapchain.hpp"
+
 #include "VulkanUtilities.hpp"
 #include "input/ControllableCamera.hpp"
 
 #include "common.hpp"
 #include <chrono>
-struct GLFWwindow;
+//struct GLFWwindow;
 
 class Renderer
 {
 public:
 
-	Renderer(VkInstance & instance, VkSurfaceKHR & surface);
+	Renderer(Swapchain & swapchain, const int width, const int height);
 
 	~Renderer();
 
-	int init(const int width, const int height);
+	void encode(VkCommandBuffer & commandBuffer, VkQueue & graphicsQueue, VkSemaphore & imageAvailableSemaphore, VkRenderPassBeginInfo & finalRenderPassInfos, VkSubmitInfo & submitInfo, const uint32_t index);
 	
-	void cleanup();
+	void update(const double deltaTime);
 	
-	VkResult draw();
+	void resize(VkRenderPass & finalRenderPass, const int width, const int height);
 	
-	int resize(const int width, const int height);
-
-protected:
-	
-	int fillSwapchain(VkRenderPass & renderPass);
-	int createMainRenderpass();
-	int createPipeline();
-	int generateCommandBuffers();
-	
-	void cleanupSwapChain();
-	
-	void createDepthBuffer();
+	void clean();
 	
 private:
 	
-	VkInstance _instance;
-	VkSurfaceKHR _surface;
-	VkPhysicalDevice _physicalDevice;
+	void createPipelines(const VkRenderPass & finalRenderPass);
+	void createObjectsDescriptors();
+	
+	
+	ShadowPass _shadowPass;
+	
 	VkDevice _device;
 	
-	VkPipeline _graphicsPipeline;
-	VkPipelineLayout _pipelineLayout;
-	VkRenderPass _mainRenderPass;
+	VkPipelineLayout _objectPipelineLayout;
+	VkPipeline _objectPipeline;
 	
+	VkPipelineLayout _skyboxPipelineLayout;
+	VkPipeline _skyboxPipeline;
 	
-	VkDescriptorSetLayout _descriptorSetLayout;
 	VkDescriptorPool _descriptorPool;
-	std::vector<VkDescriptorSet> _descriptorSets;
 	
-	VkQueue _graphicsQueue, _presentQueue;
-	
-	VkCommandPool _commandPool;
-	std::vector<VkCommandBuffer> _commandBuffers;
-	
-	VkImage _textureImage;
-	VkDeviceMemory _textureImageMemory;
-	VkImageView _textureImageView;
 	VkSampler _textureSampler;
-	;
 	
-	VkBuffer _vertexBuffer;
-	VkDeviceMemory _vertexBufferMemory;
-	VkBuffer _indexBuffer;
-	VkDeviceMemory _indexBufferMemory;
+	std::vector<Object> _objects;
+	Skybox _skybox;
 	
 	std::vector<VkBuffer> _uniformBuffers;
 	std::vector<VkDeviceMemory> _uniformBuffersMemory;
 	
-	VkSwapchainKHR _swapchain;
-	VulkanUtilities::SwapchainParameters _swapchainParams;
+	VkBuffer _lightUniformBuffer;
+	VkDeviceMemory _lightUniformBufferMemory;
 	
-	std::vector<VkImage> _swapchainImages;
-	std::vector<VkImageView> _swapchainImageViews;
-	std::vector<VkFramebuffer> _swapchainFramebuffers;
-	
-	VkImage _depthImage;
-	VkDeviceMemory _depthImageMemory;
-	VkImageView _depthImageView;
-	
-	std::vector<VkSemaphore> _imageAvailableSemaphores;
-	std::vector<VkSemaphore> _renderFinishedSemaphores;
-	std::vector<VkFence> _inFlightFences;
-	
-	size_t _currentFrame = 0;
 	glm::vec2 _size = glm::vec2(0.0f,0.0f);
-	ControllableCamera _camera;
 	
+	ControllableCamera _camera;
+	glm::mat4 _lightViewproj;
+	glm::vec4 _worldLightDir;
+	double _time = 0.0;
 };
 

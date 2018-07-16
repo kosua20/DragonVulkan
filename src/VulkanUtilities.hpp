@@ -1,8 +1,7 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-#include <string>
-#include <vector>
+#include "common.hpp"
+#include "resources/MeshUtilities.hpp"
 #include <set>
 
 class VulkanUtilities {
@@ -60,20 +59,27 @@ public:
 	
 	static int createBuffer(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkDeviceSize & size, const VkBufferUsageFlags & usage, const VkMemoryPropertyFlags & properties, VkBuffer & buffer, VkDeviceMemory & bufferMemory);
 	
-	static int createImage(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const uint32_t & width, const uint32_t & height, const VkFormat & format, const VkImageTiling & tiling, const VkImageUsageFlags & usage, const VkMemoryPropertyFlags & properties, VkImage & image, VkDeviceMemory & imageMemory);
+	static int createImage(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const uint32_t & width, const uint32_t & height, const VkFormat & format, const VkImageTiling & tiling, const VkImageUsageFlags & usage, const VkMemoryPropertyFlags & properties, const bool cube, VkImage & image, VkDeviceMemory & imageMemory);
 	
 	static void copyBuffer(const VkBuffer & srcBuffer, const VkBuffer & dstBuffer, const VkDeviceSize & size, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue);
 	
-	static void copyBufferToImage(const VkBuffer & srcBuffer, const VkImage & dstImage, const uint32_t & width, const uint32_t & height, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue);
+	static void copyBufferToImage(const VkBuffer & srcBuffer, const VkImage & dstImage, const uint32_t & width, const uint32_t & height, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, const bool cube);
 	
-	static void transitionImageLayout(const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, VkImage & image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+	static void transitionImageLayout(const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & queue, VkImage & image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, const bool cube);
 	
-	static VkImageView createImageView(VkDevice & device, VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags);
+	static VkImageView createImageView(const VkDevice & device, const VkImage & image, const VkFormat format, const VkImageAspectFlags aspectFlags, const bool cube);
 	
 	static VkFormat findDepthFormat(const VkPhysicalDevice & physicalDevice);
 	
 	static bool hasStencilComponent(VkFormat format);
 	
+	static VkSampler createSampler(const VkDevice & device, const VkFilter filter, const VkSamplerAddressMode mode);
+	
+	static void createTexture(const void * image, const uint32_t width, const uint32_t height, const bool cube, const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, VkImage & textureImage, VkDeviceMemory & textureMemory, VkImageView & textureView);
+	
+	static VkDeviceSize nextOffset(size_t size);
+	
+	static void setupBuffers(const VkPhysicalDevice & physicalDevice, const VkDevice & device, const VkCommandPool & commandPool, const VkQueue & graphicsQueue, const Mesh & mesh, VkBuffer & vertexBuffer, VkDeviceMemory & vertexBufferMemory, VkBuffer & indexBuffer, VkDeviceMemory & indexBufferMemory);
 private:
 	/// Device validation.
 	static bool isDeviceSuitable(VkPhysicalDevice adevice, VkSurfaceKHR asurface);
@@ -90,5 +96,6 @@ private:
 	
 	static bool layersEnabled;
 	static VkDebugReportCallbackEXT callback;
+	static VkDeviceSize uniformOffset;
 };
 

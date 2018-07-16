@@ -25,4 +25,24 @@
 #define M_PI	3.14159265358979323846
 #endif
 
+#include <iostream>
+#include <vector>
+#include <string>
+
+// Uniforms structs.
+struct CameraInfos {
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
+struct LightInfos {
+	glm::mat4 mvp;
+	glm::vec3 viewSpaceDir;
+};
+
+struct ObjectInfos {
+	glm::mat4 model;
+	float shininess;
+};
+
 #endif /* common_h */

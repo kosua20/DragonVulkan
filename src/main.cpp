@@ -1,17 +1,14 @@
 #include "common.hpp"
 
-#include <iostream>
-#include <vector>
 #include <set>
 #include <algorithm>
 #include <fstream>
-#include <string>
 
 #include "Renderer.hpp"
 #include "input/Input.hpp"
 
-const int WIDTH = 400;
-const int HEIGHT = 300;
+const int WIDTH = 800;
+const int HEIGHT = 600;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -41,6 +38,9 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
 }
 
 
+void window_iconify_callback(GLFWwindow* window, int iconified){
+	Input::manager().pauseEvent(iconified);
+}
 
 /// Entry point.
 
@@ -83,9 +83,12 @@ int main() {
 		return 2;
 	}
 	
+	/// Create the swapchain.
+	Swapchain swapchain(instance, surface, width, height);
+	VkRenderPassBeginInfo finalPassDescriptor;
+	
 	/// Create the renderer.	
-	Renderer renderer(instance, surface);
-	renderer.init(width, height);
+	Renderer renderer(swapchain, width, height);
 	Input::manager().resizeEvent(width, height);
 	
 	/// Register callbacks.
@@ -95,28 +98,49 @@ int main() {
 	glfwSetMouseButtonCallback(window,mouse_button_callback);	// Clicking the mouse buttons
 	glfwSetCursorPosCallback(window,cursor_pos_callback);		// Moving the cursor
 	glfwSetScrollCallback(window,scroll_callback);				// Scrolling
+	glfwSetWindowIconifyCallback(window, window_iconify_callback);
 	
+	double timer = glfwGetTime();
 	
 	/// Main loop.
 	while(!glfwWindowShouldClose(window)){
-		
+		if(Input::manager().paused()){
+			glfwWaitEvents();
+			continue;
+		}
 		Input::manager().update();
+		// Compute the time elapsed since last frame
+		double currentTime = glfwGetTime();
+		double frameTime = currentTime - timer;
+		timer = currentTime;
+		renderer.update(frameTime);
+		
 		/// Draw frame.
-		const VkResult result = renderer.draw();
+		VkResult status = swapchain.begin(finalPassDescriptor);
+		if(status == VK_SUCCESS){
+			VkSubmitInfo submitInfo;
+			// If the init was successful, we can encode our frame and commit it.
+			renderer.encode(swapchain.getCommandBuffer(), swapchain.graphicsQueue, swapchain.getSemaphore(), finalPassDescriptor, submitInfo, swapchain.currentIndex);
+			status = swapchain.commit(submitInfo);
+		}
 		// Handle resizing.
-		if(result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || Input::manager().resized()){
+		if(status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR || Input::manager().resized()){
 			int width = 0, height = 0;
 			while(width == 0 || height == 0) {
 				glfwGetFramebufferSize(window, &width, &height);
 				glfwWaitEvents();
 			}
 			Input::manager().resizeEvent(width, height);
-			renderer.resize(width, height);
+			swapchain.resize(width, height);
+			renderer.resize(swapchain.finalRenderPass, width, height);
 		}
 	}
 
 	/// Cleanup.
-	renderer.cleanup();
+	vkDeviceWaitIdle(swapchain.device);
+	renderer.clean();
+	swapchain.clean();
+	
 	// Clean up instance and surface.
 	VulkanUtilities::cleanupDebug(instance);
 	vkDestroySurfaceKHR(instance, surface, nullptr);

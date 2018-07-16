@@ -1,5 +1,5 @@
 #include "Input.hpp"
-#include <iostream>
+
 /// Singleton.
 Input& Input::manager(){
 	static Input* input = new Input();
@@ -67,7 +67,10 @@ void Input::resizeEvent(int width, int height){
 	_width = width > 0 ? width : 1;
 	_height = height > 0 ? height : 1;
 	_resized = true;
+}
 
+void Input::pauseEvent(bool paused){
+	_paused = paused;
 }
 
 void Input::update(){
@@ -82,9 +85,7 @@ void Input::update(){
 	}
 	_mouse.scroll = glm::vec2(0.0f,0.0f);
 	_resized = false;
-	
 	glfwPollEvents();
-	
 }
 
 

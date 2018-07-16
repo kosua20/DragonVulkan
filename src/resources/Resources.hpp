@@ -1,7 +1,8 @@
 #ifndef Resources_h
 #define Resources_h
-#include <string>
-#include <vector>
+
+
+#include "../common.hpp"
 
 
 class Resources {
