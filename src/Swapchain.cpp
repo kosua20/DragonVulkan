@@ -188,6 +188,8 @@ void Swapchain::resize(const int width, const int height){
 	if(width == parameters.extent.width && height == parameters.extent.height){
 		return;
 	}
+	
+	// TODO: some semaphores can leave the queue eternally waiting.
 	vkDeviceWaitIdle(device);
 	unsetup();
 	// Recreate swapchain.
@@ -242,7 +244,6 @@ Swapchain::~Swapchain() {
 
 void Swapchain::clean(){
 	unsetup();
-	vkDestroySwapchainKHR(device, _swapchain, nullptr);
 	for(size_t i = 0; i < _inFlightFences.size(); i++) {
 		vkDestroySemaphore(device, _renderFinishedSemaphores[i], nullptr);
 		vkDestroySemaphore(device, _imageAvailableSemaphores[i], nullptr);
