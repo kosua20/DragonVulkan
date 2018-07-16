@@ -19,7 +19,7 @@ public:
 
 	~Renderer();
 
-	void encode(VkCommandBuffer & commandBuffer, VkQueue & graphicsQueue, VkSemaphore & imageAvailableSemaphore, VkRenderPassBeginInfo & finalRenderPassInfos, VkSubmitInfo & submitInfo, const uint32_t index);
+	void encode(const VkQueue & graphicsQueue, const uint32_t index, VkCommandBuffer & finalCommmandBuffer, VkRenderPassBeginInfo & finalPassInfos, const VkSemaphore & startSemaphore, const VkSemaphore & endSemaphore, const VkFence & submissionFence);
 	
 	void update(const double deltaTime);
 	
@@ -30,7 +30,7 @@ public:
 private:
 	
 	void createPipelines(const VkRenderPass & finalRenderPass);
-	void createObjectsDescriptors();
+	void updateUniforms(const uint32_t index);
 	
 	
 	ShadowPass _shadowPass;

@@ -374,7 +374,7 @@ int VulkanUtilities::createDevice(VkPhysicalDevice & physicalDevice, std::set<in
 }
 
 
-int VulkanUtilities::createSwapchain(SwapchainParameters & parameters, VkSurfaceKHR & surface, VkDevice & device, ActiveQueues & queues,VkSwapchainKHR & swapchain){
+int VulkanUtilities::createSwapchain(SwapchainParameters & parameters, VkSurfaceKHR & surface, VkDevice & device, ActiveQueues & queues,VkSwapchainKHR & swapchain, VkSwapchainKHR oldSwapchain){
 	
 	// maxImageCount = 0 if there is no constraint.
 	if(parameters.support.capabilities.maxImageCount > 0 && parameters.count > parameters.support.capabilities.maxImageCount) {
@@ -406,7 +406,7 @@ int VulkanUtilities::createSwapchain(SwapchainParameters & parameters, VkSurface
 	createSwapInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	createSwapInfo.presentMode = parameters.mode;
 	createSwapInfo.clipped = VK_TRUE;
-	createSwapInfo.oldSwapchain = VK_NULL_HANDLE;
+	createSwapInfo.oldSwapchain = oldSwapchain;
 
 	if(vkCreateSwapchainKHR(device, &createSwapInfo, nullptr, &swapchain) != VK_SUCCESS) {
 		std::cerr << "Unable to create swap chain." << std::endl;

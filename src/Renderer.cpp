@@ -89,7 +89,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height) : _
 		object.generateDescriptorSets(_device, _shadowPass.descriptorSetLayout, _descriptorPool, _uniformBuffers, _lightUniformBuffer, _shadowPass.depthView, count);
 	}
 	_skybox.generateDescriptorSets(_device, _descriptorPool, _uniformBuffers, count);
-	_shadowPass.generateCommandBuffer(_objects);
+	//_shadowPass.generateCommandBuffer(_objects);
 	
 	
 }
@@ -99,17 +99,12 @@ void Renderer::createPipelines(const VkRenderPass & finalRenderPass){
 	PipelineUtilities::createPipeline(_device, "skybox", finalRenderPass, Skybox::descriptorSetLayout, _size[0], _size[1], false, VK_CULL_MODE_FRONT_BIT, false, VK_COMPARE_OP_EQUAL, pushSize, _skyboxPipelineLayout, _skyboxPipeline);
 }
 
-void Renderer::encode(VkCommandBuffer & commandBuffer, VkQueue & graphicsQueue, VkSemaphore & imageAvailableSemaphore, VkRenderPassBeginInfo & finalRenderPassInfos, VkSubmitInfo & submitInfo, const uint32_t index){
-	
-	// Update uniforms.
-	static auto startTime = std::chrono::high_resolution_clock::now();
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+void Renderer::updateUniforms(const uint32_t index){
 	CameraInfos ubo = {};
 	ubo.view = _camera.view();
 	ubo.proj = _camera.projection();
 	ubo.proj[1][1] *= -1; // Flip compared to OpenGL.
-
+	
 	LightInfos light = {};
 	light.mvp = _lightViewproj;
 	light.viewSpaceDir = glm::vec3(glm::normalize(ubo.view * _worldLightDir));
@@ -122,7 +117,23 @@ void Renderer::encode(VkCommandBuffer & commandBuffer, VkQueue & graphicsQueue, 
 	vkMapMemory(_device, _lightUniformBufferMemory, 0, sizeof(light), 0, &data);
 	memcpy(data, &light, sizeof(light));
 	vkUnmapMemory(_device, _lightUniformBufferMemory);
+}
+
+void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCommandBuffer & finalCommmandBuffer, VkRenderPassBeginInfo & finalPassInfos, const VkSemaphore & startSemaphore, const VkSemaphore & endSemaphore, const VkFence & submissionFence){
+	VkDeviceSize offsets[1] = { 0 };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	
+	updateUniforms(index);
+	
+	// Last command buffer.
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	
+	vkBeginCommandBuffer(finalCommmandBuffer, &beginInfo);
+	
+	/*
+	// ---- Shadow pass.
 	VkSubmitInfo submitInfoShadow = {};
 	submitInfoShadow.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -136,47 +147,54 @@ void Renderer::encode(VkCommandBuffer & commandBuffer, VkQueue & graphicsQueue, 
 	submitInfoShadow.commandBufferCount = 1;
 	submitInfoShadow.pCommandBuffers = &_shadowPass.commandBuffer;
 	vkQueueSubmit(graphicsQueue, 1, &submitInfoShadow, VK_NULL_HANDLE);
+	*/
 	
-	VkDeviceSize offsets[1] = { 0 };
-	// Final pass.
+	// ---- Final pass.
+	// Complete final pass infos.
 	std::array<VkClearValue, 2> clearValues = {};
 	clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
 	clearValues[1].depthStencil = { 1.0f, 0 };
-	finalRenderPassInfos.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	finalRenderPassInfos.pClearValues = clearValues.data();
-	vkCmdBeginRenderPass(commandBuffer, &finalRenderPassInfos, VK_SUBPASS_CONTENTS_INLINE);
+	finalPassInfos.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	finalPassInfos.pClearValues = clearValues.data();
+	// Submit final pass.
+	vkCmdBeginRenderPass(finalCommmandBuffer, &finalPassInfos, VK_SUBPASS_CONTENTS_INLINE);
+	
 	// Bind and draw.
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipeline);
+	vkCmdBindPipeline(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipeline);
 	for(auto & object : _objects){
 		VkBuffer vertexBuffers[] = {object._vertexBuffer};
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		// Uniform descriptor sets.
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipelineLayout, 0, 1, &object.descriptorSet(index), 0, nullptr);
-		vkCmdPushConstants(commandBuffer, _objectPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos);
-		vkCmdDrawIndexed(commandBuffer, object._count, 1, 0, 0, 0);
+		vkCmdBindVertexBuffers(finalCommmandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(finalCommmandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipelineLayout, 0, 1, &object.descriptorSet(index), 0, nullptr);
+		vkCmdPushConstants(finalCommmandBuffer, _objectPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos);
+		vkCmdDrawIndexed(finalCommmandBuffer, object._count, 1, 0, 0, 0);
 	}
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxPipeline);
+	vkCmdBindPipeline(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxPipeline);
 	VkBuffer vertexBuffers[] = {_skybox._vertexBuffer};
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, _skybox._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	// Uniform descriptor sets.
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxPipelineLayout, 0, 1, &_skybox.descriptorSet(index), 0, nullptr);
-	vkCmdPushConstants(commandBuffer, _skyboxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &_skybox.infos.model);
-	vkCmdDrawIndexed(commandBuffer, _skybox._count, 1, 0, 0, 0);
+	vkCmdBindVertexBuffers(finalCommmandBuffer, 0, 1, vertexBuffers, offsets);
+	vkCmdBindIndexBuffer(finalCommmandBuffer, _skybox._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+	vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxPipelineLayout, 0, 1, &_skybox.descriptorSet(index), 0, nullptr);
+	vkCmdPushConstants(finalCommmandBuffer, _skyboxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &_skybox.infos.model);
+	vkCmdDrawIndexed(finalCommmandBuffer, _skybox._count, 1, 0, 0, 0);
 	
-	vkCmdEndRenderPass(commandBuffer);
-	
-	
-	if(vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-		std::cerr << "Unable to end recording command buffer." << std::endl;
-	}
-	// Submit command buffer.
-	submitInfo = {};
+	// Finish final pass and command buffer.
+	vkCmdEndRenderPass(finalCommmandBuffer);
+	vkEndCommandBuffer(finalCommmandBuffer);
+	// SUbmit the last command buffer.
+	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &_shadowPass.semaphore;
-	
+	submitInfo.pWaitSemaphores = &startSemaphore;
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &finalCommmandBuffer;
+	// Semaphore for when the command buffer is done, so that we can present the image.
+	VkSemaphore signalSemaphores[] = { endSemaphore };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+	// Add the fence so that we don't reuse the command buffer while it's in use.
+	vkResetFences(_device, 1, &submissionFence);
+	vkQueueSubmit(graphicsQueue, 1, &submitInfo, submissionFence);
 }
 
 void Renderer::update(const double deltaTime) {
@@ -204,7 +222,7 @@ void Renderer::resize(VkRenderPass & finalRenderPass, const int width, const int
 	vkDestroyPipelineLayout(_device, _objectPipelineLayout, nullptr);
 	vkDestroyPipeline(_device, _skyboxPipeline, nullptr);
 	vkDestroyPipelineLayout(_device, _skyboxPipelineLayout, nullptr);
-	_shadowPass.resetSemaphore(_device);
+	//_shadowPass.resetSemaphore(_device);
 	createPipelines(finalRenderPass);
 }
 

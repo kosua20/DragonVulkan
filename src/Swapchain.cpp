@@ -37,6 +37,25 @@ Swapchain::Swapchain(VkInstance & instance, VkSurfaceKHR & surface, const int wi
 	}
 	
 	setup(width, height);
+	
+	/// Semaphores and fences.
+	_imageAvailableSemaphores.resize(count);
+	_renderFinishedSemaphores.resize(count);
+	_inFlightFences.resize(count);
+	
+	VkSemaphoreCreateInfo semaphoreInfo = {};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VkFenceCreateInfo fenceInfo = {};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	
+	for(size_t i = 0; i < _inFlightFences.size(); i++) {
+		if(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+		   vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) != VK_SUCCESS ||
+		   vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS) {
+			std::cerr << "Unable to create semaphores and fences." << std::endl;
+		}
+	}
 }
 
 
@@ -101,26 +120,6 @@ void Swapchain::setup(const int width, const int height) {
 		std::cerr << "Unable to create command buffers." << std::endl;
 	}
 	
-	/// Semaphores and fences.
-	_imageAvailableSemaphores.resize(count);
-	_renderFinishedSemaphores.resize(count);
-	_inFlightFences.resize(count);
-	
-	VkSemaphoreCreateInfo semaphoreInfo = {};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	VkFenceCreateInfo fenceInfo = {};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-	
-	for(size_t i = 0; i < _inFlightFences.size(); i++) {
-		if(vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-		   vkCreateSemaphore(device, &semaphoreInfo, nullptr, &_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-		   vkCreateFence(device, &fenceInfo, nullptr, &_inFlightFences[i]) != VK_SUCCESS) {
-			std::cerr << "Unable to create semaphores and fences." << std::endl;
-			//return 3;
-		}
-	}
-	//return 0;
 }
 
 void Swapchain::createMainRenderpass(){
@@ -198,7 +197,6 @@ void Swapchain::resize(const int width, const int height){
 VkResult Swapchain::begin(VkRenderPassBeginInfo & infos){
 	// Wait for the current commands buffer to be done.
 	vkWaitForFences(device, 1, &_inFlightFences[_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	vkResetFences(device, 1, &_inFlightFences[_currentFrame]);
 	
 	// Acquire image from swap chain.
 	// Use a semaphore to know when the image is available.
@@ -207,15 +205,7 @@ VkResult Swapchain::begin(VkRenderPassBeginInfo & infos){
 		return status;
 	}
 	
-	VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	
-	if(vkBeginCommandBuffer(_commandBuffers[currentIndex], &beginInfo) != VK_SUCCESS) {
-		std::cerr << "Unable to begin recording command buffer." << std::endl;
-	}
-	
-	// Render pass commands.
+	// Partially fill infos with internal data.
 	infos = {};
 	infos.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	infos.renderPass = finalRenderPass;
@@ -225,19 +215,9 @@ VkResult Swapchain::begin(VkRenderPassBeginInfo & infos){
 	return status;
 }
 
-VkResult Swapchain::commit(VkSubmitInfo & submitInfo){
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &_commandBuffers[currentIndex];
-	// Semaphore for when the command buffer is done, so that we can present the image.
+VkResult Swapchain::commit(){
+	
 	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[_currentFrame] };
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-	// Add the fence so that we don't reuse the command buffer while it's in use.
-	if(vkQueueSubmit(graphicsQueue, 1, &submitInfo, _inFlightFences[_currentFrame]) != VK_SUCCESS) {
-		std::cerr << "Unable to submit commands." << std::endl;
-	}
 	// Present on swap chain.
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -262,26 +242,28 @@ Swapchain::~Swapchain() {
 
 void Swapchain::clean(){
 	unsetup();
-	vkDestroyCommandPool(device, commandPool, nullptr);
-	vkDestroyDevice(device, nullptr);
-}
-
-void Swapchain::unsetup() {
-	vkDestroyRenderPass(device, finalRenderPass, nullptr);
-	vkDestroyImageView(device, _depthImageView, nullptr);
-	vkDestroyImage(device, _depthImage, nullptr);
-	vkFreeMemory(device, _depthImageMemory, nullptr);
-	for(size_t i = 0; i < count; i++) {
-		vkDestroyFramebuffer(device, _swapchainFramebuffers[i], nullptr);
-	}
-	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
-	for(size_t i = 0; i < _swapchainImageViews.size(); i++) {
-		vkDestroyImageView(device, _swapchainImageViews[i], nullptr);
-	}
 	vkDestroySwapchainKHR(device, _swapchain, nullptr);
 	for(size_t i = 0; i < _inFlightFences.size(); i++) {
 		vkDestroySemaphore(device, _renderFinishedSemaphores[i], nullptr);
 		vkDestroySemaphore(device, _imageAvailableSemaphores[i], nullptr);
 		vkDestroyFence(device, _inFlightFences[i], nullptr);
 	}
+	vkDestroyCommandPool(device, commandPool, nullptr);
+	vkDestroyDevice(device, nullptr);
+}
+
+void Swapchain::unsetup() {
+	for(size_t i = 0; i < count; i++) {
+		vkDestroyFramebuffer(device, _swapchainFramebuffers[i], nullptr);
+	}
+	vkFreeCommandBuffers(device, commandPool, static_cast<uint32_t>(_commandBuffers.size()), _commandBuffers.data());
+	
+	vkDestroyRenderPass(device, finalRenderPass, nullptr);
+	vkDestroyImageView(device, _depthImageView, nullptr);
+	for(size_t i = 0; i < _swapchainImageViews.size(); i++) {
+		vkDestroyImageView(device, _swapchainImageViews[i], nullptr);
+	}
+	vkDestroyImage(device, _depthImage, nullptr);
+	vkFreeMemory(device, _depthImageMemory, nullptr);
+	vkDestroySwapchainKHR(device, _swapchain, nullptr);
 }

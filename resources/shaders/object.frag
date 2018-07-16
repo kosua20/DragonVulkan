@@ -44,7 +44,7 @@ void main() {
 		// We are not in shadow is the point is closer than the corresponding point in the shadow map.
 		shadowFactor = 1.0;
 	}
-	
+	shadowFactor = 1.0;
 	// Phong lighting.
 	// Ambient term.
 	vec3 color = 0.1 * albedo;

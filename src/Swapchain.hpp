@@ -21,16 +21,17 @@ public:
 	
 	VkResult begin(VkRenderPassBeginInfo & infos);
 	
-	VkResult commit(VkSubmitInfo & submitInfo);
+	VkResult commit();
 	
 	void resize(const int width, const int height);
 	
 	void clean();
 	
+	
 	VkCommandBuffer & getCommandBuffer(){ return _commandBuffers[currentIndex]; }
-	
-	VkSemaphore & getSemaphore(){ return _imageAvailableSemaphores[currentIndex]; }
-	
+	VkSemaphore & getStartSemaphore(){ return _imageAvailableSemaphores[currentIndex]; }
+	VkSemaphore & getEndSemaphore(){ return _renderFinishedSemaphores[currentIndex]; }
+	VkFence & getFence(){ return _inFlightFences[currentIndex]; }
 	
 	VulkanUtilities::SwapchainParameters parameters;
 	uint32_t count;
@@ -38,6 +39,7 @@ public:
 	VkDevice device;
 	VkCommandPool commandPool;
 	VkQueue graphicsQueue;
+	
 	uint32_t currentIndex;
 	VkRenderPass finalRenderPass;
 	

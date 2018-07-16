@@ -22,8 +22,6 @@ public:
 	
 	void createDescriptors(const VkDevice & device);
 	
-	void createPipeline(const VkDevice & device);
-	
 	void generateCommandBuffer(const std::vector<Object> & objects);
 	
 	void clean(const VkDevice & device);

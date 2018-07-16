@@ -85,7 +85,7 @@ int main() {
 	
 	/// Create the swapchain.
 	Swapchain swapchain(instance, surface, width, height);
-	VkRenderPassBeginInfo finalPassDescriptor;
+	VkRenderPassBeginInfo finalPassInfos;
 	
 	/// Create the renderer.	
 	Renderer renderer(swapchain, width, height);
@@ -116,14 +116,12 @@ int main() {
 		renderer.update(frameTime);
 		
 		/// Draw frame.
-		VkResult status = swapchain.begin(finalPassDescriptor);
-		if(status == VK_SUCCESS){
-			VkSubmitInfo submitInfo;
+		VkResult status = swapchain.begin(finalPassInfos);
+		if (status == VK_SUCCESS || status == VK_SUBOPTIMAL_KHR) {
 			// If the init was successful, we can encode our frame and commit it.
-			renderer.encode(swapchain.getCommandBuffer(), swapchain.graphicsQueue, swapchain.getSemaphore(), finalPassDescriptor, submitInfo, swapchain.currentIndex);
-			status = swapchain.commit(submitInfo);
+			renderer.encode(swapchain.graphicsQueue, swapchain.currentIndex, swapchain.getCommandBuffer(), finalPassInfos, swapchain.getStartSemaphore(), swapchain.getEndSemaphore(), swapchain.getFence());
+			status = swapchain.commit();
 		}
-		// Handle resizing.
 		if(status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR || Input::manager().resized()){
 			int width = 0, height = 0;
 			while(width == 0 || height == 0) {
@@ -133,7 +131,11 @@ int main() {
 			Input::manager().resizeEvent(width, height);
 			swapchain.resize(width, height);
 			renderer.resize(swapchain.finalRenderPass, width, height);
+		} else if (status != VK_SUCCESS) {
+			std::cerr << "Error while rendering or presenting." << std::endl;
+			break;
 		}
+		
 	}
 
 	/// Cleanup.
