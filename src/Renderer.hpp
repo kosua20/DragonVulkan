@@ -32,35 +32,33 @@ private:
 	void createPipelines(const VkRenderPass & finalRenderPass);
 	void updateUniforms(const uint32_t index);
 	
+	glm::vec2 _size = glm::vec2(0.0f,0.0f);
+	double _time = 0.0;
 	
-	ShadowPass _shadowPass;
+	// Scene.
+	std::vector<Object> _objects;
+	Skybox _skybox;
+	ControllableCamera _camera;
+	// Light
+	glm::mat4 _lightViewproj;
+	glm::vec4 _worldLightDir;
 	
+	// Vulkan
 	VkDevice _device;
+	VkDescriptorPool _descriptorPool;
+	VkSampler _textureSampler;
 	
+	// Pipelines
+	ShadowPass _shadowPass;
 	VkPipelineLayout _objectPipelineLayout;
 	VkPipeline _objectPipeline;
-	
 	VkPipelineLayout _skyboxPipelineLayout;
 	VkPipeline _skyboxPipeline;
 	
-	VkDescriptorPool _descriptorPool;
-	
-	VkSampler _textureSampler;
-	
-	std::vector<Object> _objects;
-	Skybox _skybox;
-	
+	// Per frame data.
 	std::vector<VkBuffer> _uniformBuffers;
 	std::vector<VkDeviceMemory> _uniformBuffersMemory;
 	
-	VkBuffer _lightUniformBuffer;
-	VkDeviceMemory _lightUniformBufferMemory;
 	
-	glm::vec2 _size = glm::vec2(0.0f,0.0f);
-	
-	ControllableCamera _camera;
-	glm::mat4 _lightViewproj;
-	glm::vec4 _worldLightDir;
-	double _time = 0.0;
 };
 

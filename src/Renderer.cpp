@@ -20,7 +20,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height) : _
 	_device = swapchain.device;
 	
 	glm::mat4 lightProj = glm::ortho(-5.0, 5.0, -5.0, 5.0, 0.1, 5.0);
-	//lightProj[1][1] *= -1;
+	lightProj[1][1] *= -1;
 	_worldLightDir = glm::normalize(glm::vec4(1.0f,1.0f,1.0f,0.0f));
 	glm::mat4 lightView = glm::lookAt(2.0f*glm::vec3(_worldLightDir), glm::vec3(0.0f), glm::vec3(0.0,1.0,0.0));
 	_lightViewproj = lightProj * lightView;
@@ -35,9 +35,9 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height) : _
 	
 	_size = glm::vec2(width, height);
 	
-	_shadowPass.init(physicalDevice, _device, commandPool);
-	VkDeviceSize bufferSize2 = sizeof(LightInfos);
-	VulkanUtilities::createBuffer(physicalDevice, _device, bufferSize2, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, _lightUniformBuffer, _lightUniformBufferMemory);
+	_shadowPass.init(physicalDevice, _device, commandPool,count);
+	//VkDeviceSize bufferSize2 = sizeof(LightInfos);
+	//VulkanUtilities::createBuffer(physicalDevice, _device, bufferSize2, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, _lightUniformBuffer, _lightUniformBufferMemory);
 	
 	// Create sampler.
 	_textureSampler = VulkanUtilities::createSampler(_device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
@@ -86,7 +86,7 @@ Renderer::Renderer(Swapchain & swapchain, const int width, const int height) : _
 	
 	// Create descriptors sets.
 	for(auto & object : _objects){
-		object.generateDescriptorSets(_device, _shadowPass.descriptorSetLayout, _descriptorPool, _uniformBuffers, _lightUniformBuffer, _shadowPass.depthView, count);
+		object.generateDescriptorSets(_device, _shadowPass.descriptorSetLayout, _descriptorPool, _uniformBuffers, _shadowPass.depthViews, count);
 	}
 	_skybox.generateDescriptorSets(_device, _descriptorPool, _uniformBuffers, count);
 	//_shadowPass.generateCommandBuffer(_objects);
@@ -114,9 +114,7 @@ void Renderer::updateUniforms(const uint32_t index){
 	memcpy(data, &ubo, sizeof(ubo));
 	memcpy(static_cast<char*>(data) + VulkanUtilities::nextOffset(sizeof(CameraInfos)), &light, sizeof(light));
 	vkUnmapMemory(_device, _uniformBuffersMemory[index]);
-	vkMapMemory(_device, _lightUniformBufferMemory, 0, sizeof(light), 0, &data);
-	memcpy(data, &light, sizeof(light));
-	vkUnmapMemory(_device, _lightUniformBufferMemory);
+	
 }
 
 void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCommandBuffer & finalCommmandBuffer, VkRenderPassBeginInfo & finalPassInfos, const VkSemaphore & startSemaphore, const VkSemaphore & endSemaphore, const VkFence & submissionFence){
@@ -132,6 +130,27 @@ void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCom
 	
 	vkBeginCommandBuffer(finalCommmandBuffer, &beginInfo);
 	
+	VkRenderPassBeginInfo shadowInfos = {};
+	shadowInfos.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	shadowInfos.renderPass = _shadowPass.renderPass;
+	shadowInfos.framebuffer = _shadowPass.frameBuffers[index];
+	shadowInfos.renderArea.offset = { 0, 0 };
+	shadowInfos.renderArea.extent = _shadowPass.extent;
+	std::array<VkClearValue, 1> clearValuesShadow = {};
+	clearValuesShadow[0].depthStencil = {1.0f, 0};
+	shadowInfos.clearValueCount = static_cast<uint32_t>(clearValuesShadow.size());
+	shadowInfos.pClearValues = clearValuesShadow.data();
+	
+	vkCmdBeginRenderPass(finalCommmandBuffer, &shadowInfos, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBindPipeline(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _shadowPass.pipeline);
+	for(auto & object : _objects){
+		VkBuffer vertexBuffers[] = {object._vertexBuffer};
+		vkCmdBindVertexBuffers(finalCommmandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(finalCommmandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _shadowPass.pipelineLayout, 0, 1, &object.shadowDescriptorSet(index), 0, nullptr);
+		vkCmdPushConstants(finalCommmandBuffer, _shadowPass.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos);
+		vkCmdDrawIndexed(finalCommmandBuffer, object._count, 1, 0, 0, 0);
+	}
 	/*
 	// ---- Shadow pass.
 	VkSubmitInfo submitInfoShadow = {};
@@ -148,6 +167,24 @@ void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCom
 	submitInfoShadow.pCommandBuffers = &_shadowPass.commandBuffer;
 	vkQueueSubmit(graphicsQueue, 1, &submitInfoShadow, VK_NULL_HANDLE);
 	*/
+	vkCmdEndRenderPass(finalCommmandBuffer);
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;//VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // We don't change queue here.
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = _shadowPass.depthImages[index];
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	
+	vkCmdPipelineBarrier(finalCommmandBuffer,  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	
 	
 	// ---- Final pass.
 	// Complete final pass infos.
@@ -204,6 +241,7 @@ void Renderer::update(const double deltaTime) {
 	
 	_worldLightDir = glm::normalize(glm::vec4(1.0,0.5*sin(_time)+0.6, 1.0,0.0));
 	glm::mat4 lightProj = glm::ortho(-5.0, 5.0, -5.0, 5.0, 0.01, 10.0);
+	lightProj[1][1] *= -1.0f;
 	glm::mat4 lightView = glm::lookAt(2.0f*glm::vec3(_worldLightDir), glm::vec3(0.0f), glm::vec3(0.0,1.0,0.0));
 	_lightViewproj = lightProj * lightView;
 	
@@ -242,8 +280,8 @@ void Renderer::clean(){
 		vkDestroyBuffer(_device, _uniformBuffers[i], nullptr);
 		vkFreeMemory(_device, _uniformBuffersMemory[i], nullptr);
 	}
-	vkDestroyBuffer(_device, _lightUniformBuffer, nullptr);
-	vkFreeMemory(_device, _lightUniformBufferMemory, nullptr);
+	//vkDestroyBuffer(_device, _lightUniformBuffer, nullptr);
+	//vkFreeMemory(_device, _lightUniformBufferMemory, nullptr);
 	for(auto & object : _objects){
 		object.clean(_device);
 	}

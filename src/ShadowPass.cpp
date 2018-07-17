@@ -11,17 +11,28 @@
 #include "resources/MeshUtilities.hpp"
 #include "PipelineUtilities.hpp"
 
+
+VkDescriptorSetLayout ShadowPass::descriptorSetLayout = VK_NULL_HANDLE;
+
 ShadowPass::ShadowPass(const int width, const int height){
 	size = glm::vec2(width, height);
+	extent = {static_cast<uint32_t>(size[0]), static_cast<uint32_t>(size[1])};
 }
 
-void ShadowPass::init(const VkPhysicalDevice & physicalDevice,const VkDevice & device, const VkCommandPool & commandPool ){
-	// Init shadow pass and framebuffer.
-	// For shadow mapping we only need a depth attachment
-	VulkanUtilities::createImage(physicalDevice, device, size[0], size[1], VK_FORMAT_D32_SFLOAT , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false, depthImage, depthMemory);
-	depthView = VulkanUtilities::createImageView(device, depthImage, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, false);
+void ShadowPass::init(const VkPhysicalDevice & physicalDevice,const VkDevice & device, const VkCommandPool & commandPool, const  uint32_t count ){
+	frameBuffers.resize(count);
+	depthImages.resize(count);
+	depthMemorys.resize(count);
+	depthViews.resize(count);
+	descriptors.resize(count);
 	// Create a sampler for the shadow map.
 	depthSampler = VulkanUtilities::createSampler(device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+	// Init shadow pass and framebuffer.
+	// For shadow mapping we only need a depth attachment
+	for(size_t i = 0; i < count; ++i){
+		VulkanUtilities::createImage(physicalDevice, device, size[0], size[1], VK_FORMAT_D32_SFLOAT , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false, depthImages[i], depthMemorys[i]);
+		depthViews[i] = VulkanUtilities::createImageView(device, depthImages[i], VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, false);
+	}
 	
 	VkAttachmentDescription attachmentDescription{};
 	attachmentDescription.format = VK_FORMAT_D32_SFLOAT;
@@ -31,7 +42,7 @@ void ShadowPass::init(const VkPhysicalDevice & physicalDevice,const VkDevice & d
 	attachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+	attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 	// Depth buffer ref.
 	VkAttachmentReference depthReference = {};
 	depthReference.attachment = 0;
@@ -69,21 +80,24 @@ void ShadowPass::init(const VkPhysicalDevice & physicalDevice,const VkDevice & d
 	if(vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
 		std::cerr << "Unable to create shadow render pass." << std::endl;
 	}
-	// Create the framebuffer.
-	VkFramebufferCreateInfo framebufferInfo = {};
-	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-	framebufferInfo.renderPass = renderPass;
-	framebufferInfo.attachmentCount = 1;
-	framebufferInfo.pAttachments = &depthView;
-	framebufferInfo.width = size[0];
-	framebufferInfo.height = size[1];
-	framebufferInfo.layers = 1;
-	if(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffer) != VK_SUCCESS) {
-		std::cerr << "Unable to create shadow map framebuffer." << std::endl;
+	
+	for(size_t i = 0; i < count; ++i){
+		// Create the framebuffer.
+		VkFramebufferCreateInfo framebufferInfo = {};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = &depthViews[i];
+		framebufferInfo.width = size[0];
+		framebufferInfo.height = size[1];
+		framebufferInfo.layers = 1;
+		if(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &frameBuffers[i]) != VK_SUCCESS) {
+			std::cerr << "Unable to create shadow map framebuffer." << std::endl;
+		}
 	}
 	
 	// Create a command buffer and the semaphore.
-	VkCommandBufferAllocateInfo allocInfo = {};
+	/*VkCommandBufferAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.commandPool = commandPool;
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -93,12 +107,14 @@ void ShadowPass::init(const VkPhysicalDevice & physicalDevice,const VkDevice & d
 	}
 	VkSemaphoreCreateInfo semaphoreInfo = {};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
-	createDescriptors(device);
-	PipelineUtilities::createPipeline(device, "shadow", renderPass, descriptorSetLayout, size[0], size[1], true, VK_CULL_MODE_BACK_BIT, true, VK_COMPARE_OP_LESS, 0, pipelineLayout, pipeline);
+	vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);*/
+	ShadowPass::createDescriptorSetLayout(device);
+	const int pushSize = (16 + 1) * 4;
+	PipelineUtilities::createPipeline(device, "shadow", renderPass, descriptorSetLayout, size[0], size[1], true, VK_CULL_MODE_NONE, true, VK_COMPARE_OP_LESS, pushSize, pipelineLayout, pipeline);
 }
 
-void ShadowPass::createDescriptors(const VkDevice & device){
+VkDescriptorSetLayout ShadowPass::createDescriptorSetLayout(const VkDevice & device){
+	descriptorSetLayout = {};
 	// Uniform binding.
 	VkDescriptorSetLayoutBinding uboLayoutBinding = {};
 	uboLayoutBinding.binding = 0;// binding in 0.
@@ -115,12 +131,13 @@ void ShadowPass::createDescriptors(const VkDevice & device){
 	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
 		std::cerr << "Unable to create uniform descriptor." << std::endl;
 	}
+	return descriptorSetLayout;
 }
 
 void ShadowPass::generateCommandBuffer(const std::vector<Object> & objects){
 	// Shadow pass.
 	// Fill the command buffer.
-	VkCommandBufferBeginInfo beginInfo = {};
+	/*VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 	if(vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
@@ -151,7 +168,7 @@ void ShadowPass::generateCommandBuffer(const std::vector<Object> & objects){
 		vkCmdDrawIndexed(commandBuffer, object._count, 1, 0, 0, 0);
 	}
 	vkCmdEndRenderPass(commandBuffer);
-	vkEndCommandBuffer(commandBuffer);
+	vkEndCommandBuffer(commandBuffer);*/
 }
 
 void ShadowPass::clean(const VkDevice & device){
@@ -159,17 +176,20 @@ void ShadowPass::clean(const VkDevice & device){
 	vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 	vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
 	vkDestroySampler(device, depthSampler, nullptr);
-	vkDestroyImageView(device, depthView, nullptr);
-	vkDestroyImage(device, depthImage, nullptr);
-	vkFreeMemory(device, depthMemory, nullptr);
-	vkDestroyFramebuffer(device, frameBuffer, nullptr);
+	for(size_t i = 0; i < frameBuffers.size(); ++i){
+		vkDestroyImageView(device, depthViews[i], nullptr);
+		vkDestroyImage(device, depthImages[i], nullptr);
+		vkFreeMemory(device, depthMemorys[i], nullptr);
+		vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
+	}
+	
 	vkDestroyRenderPass(device, renderPass, nullptr);
-	vkDestroySemaphore(device, semaphore, nullptr);
+	//vkDestroySemaphore(device, semaphore, nullptr);
 }
 
 void ShadowPass::resetSemaphore(const VkDevice & device){
-	vkDestroySemaphore(device, semaphore, nullptr);
-	VkSemaphoreCreateInfo semaphoreInfo = {};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
+	//vkDestroySemaphore(device, semaphore, nullptr);
+	//VkSemaphoreCreateInfo semaphoreInfo = {};
+	//semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	//vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
 }

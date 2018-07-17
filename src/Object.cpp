@@ -48,9 +48,10 @@ void Object::upload(const VkPhysicalDevice & physicalDevice, const VkDevice & de
 	free(image);
 }
 
-void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & shadowLayout, const VkDescriptorPool & pool, const std::vector<VkBuffer> & constants, const VkBuffer & lightConstants, const VkImageView & shadowMap, int count){
+void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorSetLayout & shadowLayout, const VkDescriptorPool & pool, const std::vector<VkBuffer> & constants, const std::vector<VkImageView> & shadowMaps, int count){
 	
 	_descriptorSets.resize(count);
+	_shadowDescriptorSets.resize(count);
 	
 	for (size_t i = 0; i < _descriptorSets.size(); i++) {
 		VkDescriptorSetAllocateInfo allocInfo = {};
@@ -67,19 +68,23 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		bufferCameraInfo.buffer = constants[i];
 		bufferCameraInfo.offset = 0;
 		bufferCameraInfo.range = sizeof(CameraInfos);
+		
 		VkDescriptorBufferInfo bufferLightInfo = {};
 		bufferLightInfo.buffer = constants[i];
 		bufferLightInfo.offset = VulkanUtilities::nextOffset(sizeof(CameraInfos));
 		bufferLightInfo.range = sizeof(LightInfos);
+		
 		VkDescriptorImageInfo imageInfo = {};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageInfo.imageView = _textureColorView;
+		
 		VkDescriptorImageInfo imageNormalInfo = {};
 		imageNormalInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		imageNormalInfo.imageView = _textureNormalView;
+		
 		VkDescriptorImageInfo imageShadowInfo = {};
 		imageShadowInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageShadowInfo.imageView = shadowMap;
+		imageShadowInfo.imageView = shadowMaps[i];
 		
 		std::array<VkWriteDescriptorSet, 5> descriptorWrites = {};
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -124,32 +129,32 @@ void Object::generateDescriptorSets(const VkDevice & device, const VkDescriptorS
 		
 		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		
+		// Shadow descriptor.
 		
+		VkDescriptorSetAllocateInfo allocInfoShadow = {};
+		allocInfoShadow.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfoShadow.descriptorPool = pool;
+		allocInfoShadow.descriptorSetCount = 1;
+		allocInfoShadow.pSetLayouts = &shadowLayout;
+		
+		if (vkAllocateDescriptorSets(device, &allocInfoShadow, &_shadowDescriptorSets[i]) != VK_SUCCESS) {
+			std::cerr << "Unable to create descriptor sets." << std::endl;
+		}
+		
+		
+		std::array<VkWriteDescriptorSet, 1> shadowDescriptorWrites = {};
+		shadowDescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		shadowDescriptorWrites[0].dstSet = _shadowDescriptorSets[i];
+		shadowDescriptorWrites[0].dstBinding = 0;
+		shadowDescriptorWrites[0].dstArrayElement = 0;
+		shadowDescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		shadowDescriptorWrites[0].descriptorCount = 1;
+		shadowDescriptorWrites[0].pBufferInfo = &bufferLightInfo;
+		
+		vkUpdateDescriptorSets(device, static_cast<uint32_t>(shadowDescriptorWrites.size()), shadowDescriptorWrites.data(), 0, nullptr);
 	}
 	
-	VkDescriptorSetAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorPool = pool;
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &shadowLayout;
 	
-	if (vkAllocateDescriptorSets(device, &allocInfo, &_shadowDescriptorSet) != VK_SUCCESS) {
-		std::cerr << "Unable to create descriptor sets." << std::endl;
-	}
-	VkDescriptorBufferInfo bufferLightInfo = {};
-	bufferLightInfo.buffer = lightConstants;
-	bufferLightInfo.offset = 0;
-	bufferLightInfo.range = sizeof(LightInfos);
-	std::array<VkWriteDescriptorSet, 1> shadowDescriptorWrites = {};
-	shadowDescriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	shadowDescriptorWrites[0].dstSet = _shadowDescriptorSet;
-	shadowDescriptorWrites[0].dstBinding = 0;
-	shadowDescriptorWrites[0].dstArrayElement = 0;
-	shadowDescriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	shadowDescriptorWrites[0].descriptorCount = 1;
-	shadowDescriptorWrites[0].pBufferInfo = &bufferLightInfo;
-	
-	vkUpdateDescriptorSets(device, static_cast<uint32_t>(shadowDescriptorWrites.size()), shadowDescriptorWrites.data(), 0, nullptr);
 	
 }
 

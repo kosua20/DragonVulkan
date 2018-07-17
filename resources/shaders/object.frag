@@ -22,6 +22,9 @@ layout(push_constant) uniform ModelInfos {
 
 layout(location = 0) out vec4 outColor;
 
+
+
+
 void main() {
 	// Base color.
 	vec3 albedo = texture(colorMap, fragUv).rgb;
@@ -33,18 +36,18 @@ void main() {
 	vec3 l = vec3(normalize(light.viewSpaceDir));
 	
 	// Shadowing
-	vec2 shadowUV = fragLightSpacePos.xy / fragLightSpacePos.w ;
-	//shadowUV.y = 1.0 - shadowUV.y;
+	vec3 lightSpaceNdc = fragLightSpacePos.xyz/fragLightSpacePos.w;
+	vec2 shadowUV = lightSpaceNdc.xy * 0.5 + 0.5;
 	// Read both depths.
 	float lightDepth = texture(shadowMap, shadowUV).r;
-	float currentDepth = fragLightSpacePos.z / fragLightSpacePos.w;
 	// Compare depth.
-	float shadowFactor = 0.2;
-	if(currentDepth - 0.001 < lightDepth){
+	float shadowFactor = 0.0;
+	const float bias = 0.001;
+	if(lightSpaceNdc.z - bias < lightDepth){
 		// We are not in shadow is the point is closer than the corresponding point in the shadow map.
 		shadowFactor = 1.0;
 	}
-	shadowFactor = 1.0;
+	
 	// Phong lighting.
 	// Ambient term.
 	vec3 color = 0.1 * albedo;

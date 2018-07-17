@@ -188,7 +188,6 @@ void Swapchain::resize(const int width, const int height){
 	if(width == parameters.extent.width && height == parameters.extent.height){
 		return;
 	}
-	
 	// TODO: some semaphores can leave the queue eternally waiting.
 	vkDeviceWaitIdle(device);
 	unsetup();

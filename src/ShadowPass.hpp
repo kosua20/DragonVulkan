@@ -18,9 +18,7 @@ public:
 	
 	ShadowPass(const int width, const int height);
 	
-	void init(const VkPhysicalDevice & physicalDevice,const VkDevice & device, const VkCommandPool & commandPool);
-	
-	void createDescriptors(const VkDevice & device);
+	void init(const VkPhysicalDevice & physicalDevice,const VkDevice & device, const VkCommandPool & commandPool, const uint32_t count);
 	
 	void generateCommandBuffer(const std::vector<Object> & objects);
 	
@@ -28,20 +26,25 @@ public:
 	
 	void resetSemaphore(const VkDevice & device);
 	
+	static VkDescriptorSetLayout createDescriptorSetLayout(const VkDevice & device);
+	static VkDescriptorSetLayout descriptorSetLayout;
+	
 	glm::vec2 size = glm::vec2(1024.0f, 1024.0f);
-	VkFramebuffer frameBuffer;
-	VkImage depthImage;
-	VkDeviceMemory depthMemory;
-	VkImageView depthView;
+	
 	VkRenderPass renderPass;
 	VkSampler depthSampler;
-	VkDescriptorImageInfo descriptor;
-	VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-	VkSemaphore semaphore = VK_NULL_HANDLE;
+	//VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
+	//VkSemaphore semaphore = VK_NULL_HANDLE;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
-	VkDescriptorSetLayout descriptorSetLayout;
 	
+	VkExtent2D extent;
+	// Per frame data.
+	std::vector<VkFramebuffer> frameBuffers;
+	std::vector<VkImage> depthImages;
+	std::vector<VkDeviceMemory> depthMemorys;
+	std::vector<VkImageView>depthViews;
+	std::vector<VkDescriptorImageInfo> descriptors;
 };
 
 
