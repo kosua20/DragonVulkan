@@ -22,7 +22,21 @@ layout(push_constant) uniform ModelInfos {
 
 layout(location = 0) out vec4 outColor;
 
-
+float estimateShadowing(){
+	vec3 lightSpaceNdc = fragLightSpacePos.xyz/fragLightSpacePos.w;
+	if(any(greaterThan(abs(lightSpaceNdc), vec3(1.0)))){
+		return 1.0;
+	}
+	vec2 shadowUV = lightSpaceNdc.xy * 0.5 + 0.5;
+	// Read both depths.
+	float lightDepth = texture(shadowMap, shadowUV).r;
+	// Compare depth.
+	if(lightSpaceNdc.z < lightDepth){
+		// We are not in shadow is the point is closer than the corresponding point in the shadow map.
+		return 1.0;
+	}
+	return 0.0;
+}
 
 
 void main() {
@@ -36,17 +50,7 @@ void main() {
 	vec3 l = vec3(normalize(light.viewSpaceDir));
 	
 	// Shadowing
-	vec3 lightSpaceNdc = fragLightSpacePos.xyz/fragLightSpacePos.w;
-	vec2 shadowUV = lightSpaceNdc.xy * 0.5 + 0.5;
-	// Read both depths.
-	float lightDepth = texture(shadowMap, shadowUV).r;
-	// Compare depth.
-	float shadowFactor = 0.0;
-	const float bias = 0.001;
-	if(lightSpaceNdc.z - bias < lightDepth){
-		// We are not in shadow is the point is closer than the corresponding point in the shadow map.
-		shadowFactor = 1.0;
-	}
+	float shadowFactor = estimateShadowing();
 	
 	// Phong lighting.
 	// Ambient term.

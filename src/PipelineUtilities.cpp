@@ -9,7 +9,7 @@
 #include "PipelineUtilities.hpp"
 #include "VulkanUtilities.hpp"
 
-void PipelineUtilities::createPipeline(const VkDevice & device, const std::string & moduleName, const VkRenderPass & renderPass,const VkDescriptorSetLayout & descriptorSetLayout, const uint32_t width, const uint32_t height, const bool vertexOnly, const VkCullModeFlags cullMode, const bool depthWrite, const VkCompareOp compareOp, const int pushSize, VkPipelineLayout & pipelineLayout, VkPipeline & pipeline){
+void PipelineUtilities::createPipeline(const VkDevice & device, const std::string & moduleName, const VkRenderPass & renderPass,const VkDescriptorSetLayout & descriptorSetLayout, const uint32_t width, const uint32_t height, const bool vertexOnly, const VkCullModeFlags cullMode, const bool depthTest, const bool depthWrite, const bool depthBias, const VkCompareOp compareOp, const int pushSize, VkPipelineLayout & pipelineLayout, VkPipeline & pipeline){
 	// This is independent from the RTs.
 	/// Shaders.
 	VkShaderModule vertShaderModule = VulkanUtilities::createShaderModule(device, "resources/shaders/compiled/" + moduleName+ ".vert.spv");
@@ -77,6 +77,11 @@ void PipelineUtilities::createPipeline(const VkDevice & device, const std::strin
 	rasterizer.cullMode = cullMode;
 	rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizer.depthBiasEnable = VK_FALSE;
+	if(depthBias){
+		rasterizer.depthBiasEnable = VK_TRUE;
+		rasterizer.depthBiasConstantFactor = 2.0f;
+		rasterizer.depthBiasSlopeFactor = 1.5f;
+	}
 	// Multisampling (none).
 	VkPipelineMultisampleStateCreateInfo multisampling = {};
 	multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -85,7 +90,7 @@ void PipelineUtilities::createPipeline(const VkDevice & device, const std::strin
 	// Depth/stencil.
 	VkPipelineDepthStencilStateCreateInfo depthStencil = {};
 	depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthTestEnable = depthTest ? VK_TRUE : VK_FALSE;
 	depthStencil.depthWriteEnable = depthWrite ? VK_TRUE : VK_FALSE;
 	depthStencil.depthCompareOp = compareOp;
 	depthStencil.depthBoundsTestEnable = VK_FALSE;

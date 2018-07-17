@@ -96,21 +96,9 @@ void ShadowPass::init(const VkPhysicalDevice & physicalDevice,const VkDevice & d
 		}
 	}
 	
-	// Create a command buffer and the semaphore.
-	/*VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-	if(vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS) {
-		std::cerr << "Unable to create command buffers." << std::endl;
-	}
-	VkSemaphoreCreateInfo semaphoreInfo = {};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);*/
 	ShadowPass::createDescriptorSetLayout(device);
 	const int pushSize = (16 + 1) * 4;
-	PipelineUtilities::createPipeline(device, "shadow", renderPass, descriptorSetLayout, size[0], size[1], true, VK_CULL_MODE_NONE, true, VK_COMPARE_OP_LESS, pushSize, pipelineLayout, pipeline);
+	PipelineUtilities::createPipeline(device, "shadow", renderPass, descriptorSetLayout, size[0], size[1], true, VK_CULL_MODE_BACK_BIT, true, true, true, VK_COMPARE_OP_LESS, pushSize, pipelineLayout, pipeline);
 }
 
 VkDescriptorSetLayout ShadowPass::createDescriptorSetLayout(const VkDevice & device){
@@ -134,42 +122,6 @@ VkDescriptorSetLayout ShadowPass::createDescriptorSetLayout(const VkDevice & dev
 	return descriptorSetLayout;
 }
 
-void ShadowPass::generateCommandBuffer(const std::vector<Object> & objects){
-	// Shadow pass.
-	// Fill the command buffer.
-	/*VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-	if(vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-		std::cerr << "Unable to begin recording command buffer." << std::endl;
-	}
-	VkDeviceSize offsets[1] = { 0 };
-	// Render pass commands.
-	VkRenderPassBeginInfo renderPassInfos = {};
-	renderPassInfos.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfos.renderPass = renderPass;
-	renderPassInfos.framebuffer = frameBuffer;
-	renderPassInfos.renderArea.offset = { 0, 0 };
-	renderPassInfos.renderArea.extent = { static_cast<uint32_t>(size[0]), static_cast<uint32_t>(size[1])};
-	std::array<VkClearValue, 1> clearValues = {};
-	clearValues[0].depthStencil = {1.0f, 0};
-	renderPassInfos.clearValueCount = static_cast<uint32_t>(clearValues.size());
-	renderPassInfos.pClearValues = clearValues.data();
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfos, VK_SUBPASS_CONTENTS_INLINE);
-	
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-	
-	for(auto & object : objects){
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &object._vertexBuffer, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		// Uniform descriptor sets.
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &object.shadowDescriptorSet(), 0, nullptr);
-		//vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, (16+1)*4, &object.infos);
-		vkCmdDrawIndexed(commandBuffer, object._count, 1, 0, 0, 0);
-	}
-	vkCmdEndRenderPass(commandBuffer);
-	vkEndCommandBuffer(commandBuffer);*/
-}
 
 void ShadowPass::clean(const VkDevice & device){
 	vkDestroyPipeline(device, pipeline, nullptr);
@@ -182,14 +134,5 @@ void ShadowPass::clean(const VkDevice & device){
 		vkFreeMemory(device, depthMemorys[i], nullptr);
 		vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
 	}
-	
 	vkDestroyRenderPass(device, renderPass, nullptr);
-	//vkDestroySemaphore(device, semaphore, nullptr);
-}
-
-void ShadowPass::resetSemaphore(const VkDevice & device){
-	//vkDestroySemaphore(device, semaphore, nullptr);
-	//VkSemaphoreCreateInfo semaphoreInfo = {};
-	//semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	//vkCreateSemaphore(device, &semaphoreInfo, nullptr, &semaphore);
 }

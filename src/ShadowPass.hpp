@@ -20,11 +20,7 @@ public:
 	
 	void init(const VkPhysicalDevice & physicalDevice,const VkDevice & device, const VkCommandPool & commandPool, const uint32_t count);
 	
-	void generateCommandBuffer(const std::vector<Object> & objects);
-	
 	void clean(const VkDevice & device);
-	
-	void resetSemaphore(const VkDevice & device);
 	
 	static VkDescriptorSetLayout createDescriptorSetLayout(const VkDevice & device);
 	static VkDescriptorSetLayout descriptorSetLayout;
@@ -33,8 +29,6 @@ public:
 	
 	VkRenderPass renderPass;
 	VkSampler depthSampler;
-	//VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
-	//VkSemaphore semaphore = VK_NULL_HANDLE;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
 	
