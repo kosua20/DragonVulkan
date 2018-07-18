@@ -10,7 +10,7 @@
 Renderer::~Renderer(){
 }
 
-Renderer::Renderer(Swapchain & swapchain, const int width, const int height) : _skybox("cubemap"), _shadowPass(width, height){
+Renderer::Renderer(Swapchain & swapchain, const int width, const int height) : _skybox("cubemap"), _shadowPass(2048, 2048){
 	
 	const auto & physicalDevice = swapchain.physicalDevice;
 	const auto & commandPool = swapchain.commandPool;

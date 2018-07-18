@@ -7,8 +7,8 @@
 #include "Renderer.hpp"
 #include "input/Input.hpp"
 
-const int WIDTH = 800;
-const int HEIGHT = 600;
+const int WIDTH = 1280;
+const int HEIGHT = 800;
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -26,7 +26,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
-	Input::manager().mousePressedEvent(button, action); // Could pass mods to simplify things.
+	Input::manager().mousePressedEvent(button, action);
 }
 
 void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos){
