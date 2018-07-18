@@ -182,10 +182,10 @@ VkPresentModeKHR VulkanUtilities::chooseSwapPresentMode(const std::vector<VkPres
 			return availablePresentMode;
 		} else if(availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
 			// Uncapped framerate.
-			// bestMode = availablePresentMode;
+			//bestMode = availablePresentMode;
 		}
 	}
-	std::cout << (bestMode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "Immediate" : "FIFO") << " mode." << std::endl;
+	std::cout << "Swapchain using " << (bestMode == VK_PRESENT_MODE_MAILBOX_KHR ? "Mailbox" : "FIFO") << " mode." << std::endl;
 	return bestMode;
 }
 
@@ -196,7 +196,7 @@ VulkanUtilities::SwapchainParameters VulkanUtilities::generateSwapchainParameter
 	parameters.surface = VulkanUtilities::chooseSwapSurfaceFormat(parameters.support.formats);
 	parameters.mode = VulkanUtilities::chooseSwapPresentMode(parameters.support.presentModes);
 	// Set the number of images in the chain.
-	std::cout << "Swapchain can have between " << parameters.support.capabilities.minImageCount << " & " << parameters.support.capabilities.maxImageCount << "." << std::endl;
+	std::cout << "Swapchain can have between " << parameters.support.capabilities.minImageCount << " and " << parameters.support.capabilities.maxImageCount << " images." << std::endl;
 	parameters.count = parameters.support.capabilities.minImageCount + 1;
 	return parameters;
 }

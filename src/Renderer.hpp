@@ -42,6 +42,7 @@ private:
 	// Light
 	glm::mat4 _lightViewproj;
 	glm::vec4 _worldLightDir;
+	glm::mat4 _lightProj;
 	
 	// Vulkan
 	VkDevice _device;

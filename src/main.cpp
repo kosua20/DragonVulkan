@@ -10,10 +10,10 @@
 const int WIDTH = 1280;
 const int HEIGHT = 800;
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
+#ifdef DEBUG
 const bool enableValidationLayers = true;
+#else
+const bool enableValidationLayers = false;
 #endif
 
 /// GLFW callbacks.

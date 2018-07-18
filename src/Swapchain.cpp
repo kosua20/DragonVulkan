@@ -11,6 +11,7 @@
 
 Swapchain::Swapchain(VkInstance & instance, VkSurfaceKHR & surface, const int width, const int height) {
 	_surface = surface;
+	currentIndex = 0;
 	// Init basic Vulkan objects.
 	/// Setup physical device (GPU).
 	VulkanUtilities::createPhysicalDevice(instance, surface, physicalDevice);
@@ -45,6 +46,7 @@ Swapchain::Swapchain(VkInstance & instance, VkSurfaceKHR & surface, const int wi
 	
 	VkSemaphoreCreateInfo semaphoreInfo = {};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
 	VkFenceCreateInfo fenceInfo = {};
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -83,7 +85,7 @@ void Swapchain::setup(const int width, const int height) {
 	vkGetSwapchainImagesKHR(device, _swapchain, &parameters.count, nullptr);
 	count = parameters.count;
 	_swapchainImages.resize(count);
-	std::cout << "Images: " << count << std::endl;
+	std::cout << "Swapchain using " << count << " images."<< std::endl;
 	vkGetSwapchainImagesKHR(device, _swapchain, &parameters.count, _swapchainImages.data());
 	// Create views for each image.
 	_swapchainImageViews.resize(count);
@@ -195,13 +197,16 @@ void Swapchain::resize(const int width, const int height){
 	setup(width, height);
 }
 
+
 VkResult Swapchain::begin(VkRenderPassBeginInfo & infos){
 	// Wait for the current commands buffer to be done.
-	vkWaitForFences(device, 1, &_inFlightFences[_currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	vkWaitForFences(device, 1, &_inFlightFences[currentIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
 	
 	// Acquire image from swap chain.
 	// Use a semaphore to know when the image is available.
-	VkResult status = vkAcquireNextImageKHR(device, _swapchain, std::numeric_limits<uint64_t>::max(), _imageAvailableSemaphores[_currentFrame], VK_NULL_HANDLE, &currentIndex);
+	uint32_t newIndex;
+	VkResult status = vkAcquireNextImageKHR(device, _swapchain, std::numeric_limits<uint64_t>::max(), _imageAvailableSemaphores[currentIndex], VK_NULL_HANDLE, &newIndex);
+	currentIndex = newIndex;
 	if(status != VK_SUCCESS && status != VK_SUBOPTIMAL_KHR) {
 		return status;
 	}
@@ -218,7 +223,7 @@ VkResult Swapchain::begin(VkRenderPassBeginInfo & infos){
 
 VkResult Swapchain::commit(){
 	
-	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[_currentFrame] };
+	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[currentIndex] };
 	// Present on swap chain.
 	VkPresentInfoKHR presentInfo = {};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -229,12 +234,8 @@ VkResult Swapchain::commit(){
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &currentIndex;
-	presentInfo.pResults = nullptr; // Optional
 	VkResult status = vkQueuePresentKHR(_presentQueue, &presentInfo);
-	if(status != VK_SUCCESS) {
-		return status;
-	}
-	_currentFrame = (_currentFrame + 1) % count;
+	currentIndex = (currentIndex + 1) % count;
 	return status;
 }
 

@@ -27,7 +27,6 @@ public:
 	
 	void clean();
 	
-	
 	VkCommandBuffer & getCommandBuffer(){ return _commandBuffers[currentIndex]; }
 	VkSemaphore & getStartSemaphore(){ return _imageAvailableSemaphores[currentIndex]; }
 	VkSemaphore & getEndSemaphore(){ return _renderFinishedSemaphores[currentIndex]; }
@@ -66,7 +65,7 @@ private:
 	std::vector<VkSemaphore> _imageAvailableSemaphores;
 	std::vector<VkSemaphore> _renderFinishedSemaphores;
 	std::vector<VkFence> _inFlightFences;
-	uint32_t _currentFrame;
+	
 	
 	
 };
