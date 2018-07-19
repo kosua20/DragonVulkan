@@ -26,11 +26,13 @@ public:
 	void resize(const int width, const int height);
 	
 	void clean();
-	
-	VkCommandBuffer & getCommandBuffer(){ return _commandBuffers[currentIndex]; }
-	VkSemaphore & getStartSemaphore(){ return _imageAvailableSemaphores[currentIndex]; }
-	VkSemaphore & getEndSemaphore(){ return _renderFinishedSemaphores[currentIndex]; }
-	VkFence & getFence(){ return _inFlightFences[currentIndex]; }
+
+	void step(){ currentFrame = (currentFrame + 1) % count; }
+
+	VkCommandBuffer & getCommandBuffer(){ return _commandBuffers[imageIndex]; }
+	VkSemaphore & getStartSemaphore(){ return _imageAvailableSemaphores[currentFrame]; }
+	VkSemaphore & getEndSemaphore(){ return _renderFinishedSemaphores[currentFrame]; }
+	VkFence & getFence(){ return _inFlightFences[currentFrame]; }
 	
 	VulkanUtilities::SwapchainParameters parameters;
 	uint32_t count;
@@ -39,7 +41,7 @@ public:
 	VkCommandPool commandPool;
 	VkQueue graphicsQueue;
 	
-	uint32_t currentIndex;
+	uint32_t imageIndex;
 	VkRenderPass finalRenderPass;
 	
 private:
@@ -66,7 +68,7 @@ private:
 	std::vector<VkSemaphore> _renderFinishedSemaphores;
 	std::vector<VkFence> _inFlightFences;
 	
-	
+	uint32_t currentFrame;
 	
 };
 

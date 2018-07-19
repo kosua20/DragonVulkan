@@ -19,7 +19,7 @@ public:
 
 	~Renderer();
 
-	void encode(const VkQueue & graphicsQueue, const uint32_t index, VkCommandBuffer & finalCommmandBuffer, VkRenderPassBeginInfo & finalPassInfos, const VkSemaphore & startSemaphore, const VkSemaphore & endSemaphore, const VkFence & submissionFence);
+	void encode(const VkQueue & graphicsQueue, const uint32_t imageIndex, VkCommandBuffer & finalCommmandBuffer, VkRenderPassBeginInfo & finalPassInfos, const VkSemaphore & startSemaphore, const VkSemaphore & endSemaphore, const VkFence & submissionFence);
 	
 	void update(const double deltaTime);
 	

@@ -8,7 +8,7 @@
 #endif
 
 Camera::Camera()  {
-	_fov = 1.91f;
+	_fov = 1.8f;
 	_ratio = 4.0f/3.0f;
 	_near = 0.01f;
 	_far = 100.0f;

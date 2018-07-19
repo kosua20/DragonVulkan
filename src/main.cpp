@@ -119,7 +119,7 @@ int main() {
 		VkResult status = swapchain.begin(finalPassInfos);
 		if (status == VK_SUCCESS || status == VK_SUBOPTIMAL_KHR) {
 			// If the init was successful, we can encode our frame and commit it.
-			renderer.encode(swapchain.graphicsQueue, swapchain.currentIndex, swapchain.getCommandBuffer(), finalPassInfos, swapchain.getStartSemaphore(), swapchain.getEndSemaphore(), swapchain.getFence());
+			renderer.encode(swapchain.graphicsQueue, swapchain.imageIndex, swapchain.getCommandBuffer(), finalPassInfos, swapchain.getStartSemaphore(), swapchain.getEndSemaphore(), swapchain.getFence());
 			status = swapchain.commit();
 		}
 		if(status == VK_ERROR_OUT_OF_DATE_KHR || status == VK_SUBOPTIMAL_KHR || Input::manager().resized()){
@@ -135,6 +135,7 @@ int main() {
 			std::cerr << "Error while rendering or presenting." << std::endl;
 			break;
 		}
+		swapchain.step();
 		
 	}
 

@@ -90,6 +90,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>D:\sirodrig\perso\DragonVulkan\libs\glm;D:\sirodrig\perso\DragonVulkan\libs\glfw3\include;C:\VulkanSDK\1.1.77.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_MBCS;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.1.77.0\Lib;D:\sirodrig\perso\DragonVulkan\libs\glfw3\lib-vc2015;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

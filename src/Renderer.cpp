@@ -115,11 +115,11 @@ void Renderer::updateUniforms(const uint32_t index){
 	
 }
 
-void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCommandBuffer & finalCommmandBuffer, VkRenderPassBeginInfo & finalPassInfos, const VkSemaphore & startSemaphore, const VkSemaphore & endSemaphore, const VkFence & submissionFence){
+void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t imageIndex, VkCommandBuffer & finalCommmandBuffer, VkRenderPassBeginInfo & finalPassInfos, const VkSemaphore & startSemaphore, const VkSemaphore & endSemaphore, const VkFence & submissionFence){
 	VkDeviceSize offsets[1] = { 0 };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	
-	updateUniforms(index);
+	updateUniforms(imageIndex);
 	
 	VkCommandBufferBeginInfo beginInfo = {};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -130,7 +130,7 @@ void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCom
 	VkRenderPassBeginInfo shadowInfos = {};
 	shadowInfos.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	shadowInfos.renderPass = _shadowPass.renderPass;
-	shadowInfos.framebuffer = _shadowPass.frameBuffers[index];
+	shadowInfos.framebuffer = _shadowPass.frameBuffers[imageIndex];
 	shadowInfos.renderArea.offset = { 0, 0 };
 	shadowInfos.renderArea.extent = _shadowPass.extent;
 	std::array<VkClearValue, 1> clearValuesShadow = {};
@@ -144,7 +144,7 @@ void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCom
 		VkBuffer vertexBuffers[] = {object._vertexBuffer};
 		vkCmdBindVertexBuffers(finalCommmandBuffer, 0, 1, vertexBuffers, offsets);
 		vkCmdBindIndexBuffer(finalCommmandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _shadowPass.pipelineLayout, 0, 1, &object.shadowDescriptorSet(index), 0, nullptr);
+		vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _shadowPass.pipelineLayout, 0, 1, &object.shadowDescriptorSet(imageIndex), 0, nullptr);
 		vkCmdPushConstants(finalCommmandBuffer, _shadowPass.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos);
 		vkCmdDrawIndexed(finalCommmandBuffer, object._count, 1, 0, 0, 0);
 	}
@@ -156,7 +156,7 @@ void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCom
 	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // We don't change queue here.
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = _shadowPass.depthImages[index];
+	barrier.image = _shadowPass.depthImages[imageIndex];
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
 	barrier.subresourceRange.baseArrayLayer = 0;
@@ -184,7 +184,7 @@ void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCom
 		VkBuffer vertexBuffers[] = {object._vertexBuffer};
 		vkCmdBindVertexBuffers(finalCommmandBuffer, 0, 1, vertexBuffers, offsets);
 		vkCmdBindIndexBuffer(finalCommmandBuffer, object._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-		vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipelineLayout, 0, 1, &object.descriptorSet(index), 0, nullptr);
+		vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _objectPipelineLayout, 0, 1, &object.descriptorSet(imageIndex), 0, nullptr);
 		vkCmdPushConstants(finalCommmandBuffer, _objectPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &object.infos);
 		vkCmdDrawIndexed(finalCommmandBuffer, object._count, 1, 0, 0, 0);
 	}
@@ -192,7 +192,7 @@ void Renderer::encode(const VkQueue & graphicsQueue, const uint32_t index, VkCom
 	VkBuffer vertexBuffers[] = {_skybox._vertexBuffer};
 	vkCmdBindVertexBuffers(finalCommmandBuffer, 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(finalCommmandBuffer, _skybox._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxPipelineLayout, 0, 1, &_skybox.descriptorSet(index), 0, nullptr);
+	vkCmdBindDescriptorSets(finalCommmandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxPipelineLayout, 0, 1, &_skybox.descriptorSet(imageIndex), 0, nullptr);
 	vkCmdPushConstants(finalCommmandBuffer, _skyboxPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, (16+1)*4, &_skybox.infos.model);
 	vkCmdDrawIndexed(finalCommmandBuffer, _skybox._count, 1, 0, 0, 0);
 	
